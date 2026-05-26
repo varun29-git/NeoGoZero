@@ -13,6 +13,20 @@ Current milestone:
 7. Neural-network encoding contract
 8. ResNet-style policy-value neural network
 
+Project layout:
+
+```text
+go_engine/                         Go board, rules, scoring
+search_players/                    Random player and PUCT search player
+match_evaluation/                  Bot-vs-bot games and match stats
+zero_training_pipeline/            Self-play, replay buffer, training loop
+policy_value_networks/
+  resnet_policy_value/             AlphaGo Zero-style ResNet policy-value net
+  convnext_policy_value/           ConvNeXt policy-value net variant
+run_experiments/                   Commands you run while developing/training
+tests/                             Core test suite
+```
+
 Run tests:
 
 ```bash

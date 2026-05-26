@@ -10,7 +10,7 @@
 
 ### Milestone 1: Go Rules Engine
 
-- Created the Python project structure with `src/`, `tests/`, and `run_experiments/`.
+- Created the first Python project structure, later clarified into explicit top-level folders.
 - Implemented the core Go types:
   - `Player`
   - `Point`
@@ -41,7 +41,7 @@
 
 - Renamed the repo folder from `MyAlphaGo` to `NeoGoZero`.
 - Updated the README title and project metadata to use `NeoGoZero`.
-- Renamed the Python import package to `split top-level packages` so the core engine has an explicit name.
+- Split the code into explicit top-level packages: `go_engine`, `search_players`, `match_evaluation`, `zero_training_pipeline`, and `policy_value_networks`.
 - Moved the repo out of `/Users/varundaiya/1bit_llm_advanced` so it lives as its own standalone project at `/Users/varundaiya/NeoGoZero`.
 
 ### Milestone 2: Basic PUCT Bot

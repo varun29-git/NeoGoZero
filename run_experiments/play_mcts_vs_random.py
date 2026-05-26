@@ -4,7 +4,7 @@ import random
 import sys
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from search_players.mcts_bot import MCTSBot
 from search_players.random_bot import RandomBot

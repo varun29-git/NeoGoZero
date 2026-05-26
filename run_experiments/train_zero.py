@@ -4,7 +4,7 @@ import argparse
 import sys
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from zero_training_pipeline.zero_loop import ZeroTrainingConfig, run_zero_training
 
