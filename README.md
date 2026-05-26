@@ -54,3 +54,19 @@ Run the repeatable Zero training loop:
 ```bash
 python3 scripts/train_zero.py
 ```
+
+Useful training flags:
+
+```bash
+python3 scripts/train_zero.py \
+  --board-size 9 \
+  --history-length 8 \
+  --channels 256 \
+  --res-blocks 20 \
+  --mcts-rounds 800 \
+  --self-play-games 25 \
+  --training-steps 1000 \
+  --evaluation-games 20
+```
+
+The default command is intentionally tiny so it can run as a smoke test on a laptop.

@@ -33,7 +33,7 @@ class PolicyValueNet(nn.Module):
     def __init__(
         self,
         board_size: int = 9,
-        input_planes: int = 3,
+        input_planes: int = 17,
         channels: int = 256,
         num_res_blocks: int = 20,
     ) -> None:

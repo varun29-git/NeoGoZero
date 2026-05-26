@@ -3,7 +3,7 @@ from __future__ import annotations
 import copy
 import json
 import random
-from dataclasses import asdict, dataclass, field
+from dataclasses import MISSING, asdict, dataclass, field, fields
 from pathlib import Path
 
 import torch
@@ -91,7 +91,13 @@ class ZeroTrainingConfig:
 
     @classmethod
     def from_dict(cls, data: dict[str, object]) -> ZeroTrainingConfig:
-        converted = dict(data)
+        defaults = {}
+        for config_field in fields(cls):
+            if config_field.default is not MISSING:
+                defaults[config_field.name] = config_field.default
+            elif config_field.default_factory is not MISSING:
+                defaults[config_field.name] = config_field.default_factory()
+        converted = {**defaults, **data}
         converted["checkpoint_dir"] = Path(str(converted["checkpoint_dir"]))
         if converted.get("resume_checkpoint") is not None:
             converted["resume_checkpoint"] = Path(str(converted["resume_checkpoint"]))
