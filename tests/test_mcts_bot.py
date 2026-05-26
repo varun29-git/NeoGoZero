@@ -4,7 +4,12 @@ import random
 
 import pytest
 
-from myalphago.bots.mcts_bot import Evaluation, MCTSBot, MCTSNode
+from myalphago.bots.mcts_bot import (
+    Evaluation,
+    MCTSBot,
+    MCTSNode,
+    _select_move_from_visit_counts,
+)
 from myalphago.bots.random_bot import RandomBot
 from myalphago.go.game import GameState, Move
 from myalphago.go.types import Player, Point
@@ -108,3 +113,29 @@ def test_mcts_can_use_a_custom_evaluator_prior() -> None:
     bot = MCTSBot(num_rounds=2, evaluator=CenterPriorEvaluator())
 
     assert bot.select_move(game) == Move.play(Point(2, 2))
+
+
+def test_temperature_zero_selects_most_visited_move() -> None:
+    move_a = Move.play(Point(1, 1))
+    move_b = Move.play(Point(1, 2))
+
+    selected = _select_move_from_visit_counts(
+        {move_a: 1, move_b: 5},
+        temperature=0.0,
+        rng=random.Random(1),
+    )
+
+    assert selected == move_b
+
+
+def test_dirichlet_noise_changes_root_priors() -> None:
+    game = GameState.new_game(board_size=3)
+    root = MCTSNode(game_state=game)
+    root.expand(Evaluation.uniform(game, value=0.0).move_priors)
+    before = [child.prior_probability for child in root.children]
+
+    root.add_dirichlet_noise(alpha=0.3, epsilon=1.0, rng=random.Random(1))
+    after = [child.prior_probability for child in root.children]
+
+    assert after != before
+    assert sum(after) == pytest.approx(1.0)

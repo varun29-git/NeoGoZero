@@ -6,6 +6,7 @@ from myalphago.go.board import Board
 from myalphago.go.game import GameState, Move
 from myalphago.go.types import Player, Point
 from myalphago.training.encoding import (
+    encode_board_history,
     encode_game_state,
     encode_policy,
     index_to_move,
@@ -61,3 +62,34 @@ def test_encode_policy_includes_pass_move() -> None:
 def test_invalid_policy_index_is_rejected() -> None:
     with pytest.raises(ValueError):
         index_to_move(10, board_size=3)
+
+
+def test_encode_game_state_supports_history_planes() -> None:
+    game = GameState.new_game(board_size=3)
+    game = game.apply_move(Move.play(Point(1, 1)))
+    game = game.apply_move(Move.play(Point(2, 2)))
+
+    planes = encode_game_state(game, history_length=2)
+
+    assert len(planes) == 5
+    assert planes[0][1][1] == 1
+    assert planes[3][0][0] == 1
+
+
+def test_encode_board_history_pads_missing_positions() -> None:
+    history = (((1, 1, Player.BLACK.value),),)
+
+    planes = encode_board_history(
+        board_history=history,
+        player=Player.BLACK,
+        board_size=3,
+        history_length=2,
+    )
+
+    assert len(planes) == 5
+    assert planes[0][0][0] == 1
+    assert planes[2] == (
+        (0, 0, 0),
+        (0, 0, 0),
+        (0, 0, 0),
+    )
