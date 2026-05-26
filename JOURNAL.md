@@ -138,8 +138,19 @@
 - Added `scripts/train_zero.py` as the main repeatable training entrypoint.
 - Added tests for replay-buffer behavior and checkpoint round trips.
 
+### Milestone 9: Training-Ready Self-Play Features
+
+- Added temperature-based move sampling from MCTS visit counts.
+- Added root Dirichlet noise for self-play exploration.
+- Added configurable history-plane encoding.
+- Set the standalone ResNet model default to 17 input planes, matching 8 history positions plus the side-to-move plane.
+- Added `--history-length`, `--self-play-temperature`, `--temperature-drop-move`, `--dirichlet-alpha`, and `--dirichlet-epsilon` flags to `scripts/train_zero.py`.
+- Added checkpoint resume support through `--resume-checkpoint`.
+- Added JSONL metrics writing for each training iteration.
+- Added tests for temperature selection, Dirichlet noise, history planes, self-play history capture, metrics writing, and checkpoint resume.
+
 ### Next Direction
 
-- Add temperature sampling and Dirichlet noise for self-play exploration.
 - Improve MCTS speed so larger 5x5 and 9x9 experiments are practical.
-- Add richer model/history input planes.
+- Add batched neural inference for MCTS leaf evaluations.
+- Add stronger training/evaluation dashboards.
