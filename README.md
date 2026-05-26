@@ -48,3 +48,9 @@ Run a tiny policy-value training smoke test:
 ```bash
 python3 scripts/train_tiny_policy_value.py
 ```
+
+Run the repeatable Zero training loop:
+
+```bash
+python3 scripts/train_zero.py
+```

@@ -124,8 +124,22 @@
 - Added `scripts/train_tiny_policy_value.py` for a tiny self-play-to-training smoke path.
 - Added tests for model output shapes, tensor conversion, training loss, and neural evaluator priors.
 
+### Milestone 8: Repeatable Zero Training Loop
+
+- Added replay buffer support.
+- Added a configurable Zero training loop that runs:
+  - Self-play
+  - Replay-buffer insertion
+  - Policy-value training steps
+  - Optional candidate-vs-champion evaluation
+  - Model promotion or rollback
+  - Checkpoint saving
+- Added checkpoint loading for model, optimizer, config, and replay examples.
+- Added `scripts/train_zero.py` as the main repeatable training entrypoint.
+- Added tests for replay-buffer behavior and checkpoint round trips.
+
 ### Next Direction
 
-- Turn the smoke training path into a repeatable training loop with checkpoints.
-- Add model evaluation against previous checkpoints.
+- Add temperature sampling and Dirichlet noise for self-play exploration.
 - Improve MCTS speed so larger 5x5 and 9x9 experiments are practical.
+- Add richer model/history input planes.
