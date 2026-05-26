@@ -162,6 +162,26 @@ class MCTSNode:
             raise ValueError("cannot choose a move from a leaf node")
         return max(self.children, key=lambda child: child.num_rollouts)
 
+    def add_dirichlet_noise(
+        self,
+        alpha: float,
+        epsilon: float,
+        rng: random.Random,
+    ) -> None:
+        if not self.children:
+            return
+        samples = [rng.gammavariate(alpha, 1.0) for _ in self.children]
+        total = sum(samples)
+        if total == 0:
+            samples = [1.0 for _ in self.children]
+            total = len(samples)
+
+        for child, sample in zip(self.children, samples):
+            noise = sample / total
+            child.prior_probability = (
+                (1 - epsilon) * child.prior_probability + epsilon * noise
+            )
+
 
 @dataclass
 class MCTSBot:
@@ -169,6 +189,8 @@ class MCTSBot:
     c_puct: float = 1.5
     max_rollout_moves: int | None = None
     evaluator: Evaluator | None = None
+    dirichlet_alpha: float = 0.03
+    dirichlet_epsilon: float = 0.25
     rng: random.Random = field(default_factory=random.Random)
 
     def __post_init__(self) -> None:
@@ -178,6 +200,10 @@ class MCTSBot:
             raise ValueError("c_puct cannot be negative")
         if self.max_rollout_moves is not None and self.max_rollout_moves < 1:
             raise ValueError("max_rollout_moves must be at least 1")
+        if self.dirichlet_alpha <= 0:
+            raise ValueError("dirichlet_alpha must be positive")
+        if not 0 <= self.dirichlet_epsilon <= 1:
+            raise ValueError("dirichlet_epsilon must be in [0, 1]")
         if self.evaluator is None:
             self.evaluator = RandomRolloutEvaluator(
                 rng=self.rng,
@@ -185,9 +211,17 @@ class MCTSBot:
             )
 
     def select_move(self, game_state: GameState) -> Move:
-        return self.search(game_state).selected_move
+        return self.search(game_state, temperature=0.0).selected_move
 
-    def search(self, game_state: GameState) -> SearchResult:
+    def search(
+        self,
+        game_state: GameState,
+        temperature: float = 0.0,
+        add_dirichlet_noise: bool = False,
+    ) -> SearchResult:
+        if temperature < 0:
+            raise ValueError("temperature cannot be negative")
+
         legal_moves = game_state.legal_moves()
         if not legal_moves:
             raise ValueError("cannot select a move after the game is over")
@@ -198,6 +232,7 @@ class MCTSBot:
             )
 
         root = MCTSNode(game_state)
+        added_root_noise = False
 
         for _ in range(self.num_rounds):
             node = root
@@ -208,6 +243,18 @@ class MCTSBot:
             assert self.evaluator is not None
             evaluation = self.evaluator.evaluate(node.game_state)
             node.expand(evaluation.move_priors)
+            if (
+                add_dirichlet_noise
+                and node is root
+                and not added_root_noise
+                and root.children
+            ):
+                root.add_dirichlet_noise(
+                    alpha=self.dirichlet_alpha,
+                    epsilon=self.dirichlet_epsilon,
+                    rng=self.rng,
+                )
+                added_root_noise = True
 
             value = evaluation.value
             while node is not None:
@@ -222,7 +269,43 @@ class MCTSBot:
             for child in root.children
             if child.move is not None
         }
+        selected_move = _select_move_from_visit_counts(
+            visit_counts=visit_counts,
+            temperature=temperature,
+            rng=self.rng,
+        )
         return SearchResult(
-            selected_move=best_child.move,
+            selected_move=selected_move,
             visit_counts=visit_counts,
         )
+
+
+def _select_move_from_visit_counts(
+    visit_counts: dict[Move, int],
+    temperature: float,
+    rng: random.Random,
+) -> Move:
+    if not visit_counts:
+        raise ValueError("cannot select from empty visit counts")
+    if temperature == 0:
+        return max(visit_counts, key=visit_counts.get)
+
+    weighted_moves = []
+    total = 0.0
+    exponent = 1 / temperature
+    for move, visits in visit_counts.items():
+        weight = visits**exponent
+        weighted_moves.append((move, weight))
+        total += weight
+
+    if total == 0:
+        return rng.choice(tuple(visit_counts))
+
+    threshold = rng.random() * total
+    cumulative = 0.0
+    for move, weight in weighted_moves:
+        cumulative += weight
+        if cumulative >= threshold:
+            return move
+
+    return weighted_moves[-1][0]

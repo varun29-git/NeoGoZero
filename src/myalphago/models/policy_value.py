@@ -40,9 +40,12 @@ class PolicyValueNet(nn.Module):
         super().__init__()
         if num_res_blocks < 1:
             raise ValueError("num_res_blocks must be at least 1")
+        if input_planes < 1 or input_planes % 2 == 0:
+            raise ValueError("input_planes must be a positive odd number")
 
         self.board_size = board_size
         self.policy_size = board_size * board_size + 1
+        self.input_planes = input_planes
         self.channels = channels
         self.num_res_blocks = num_res_blocks
 
@@ -87,8 +90,9 @@ class TorchPolicyValueEvaluator:
 
     def evaluate(self, game_state: GameState) -> Evaluation:
         self.model.eval()
+        history_length = (self.model.input_planes - 1) // 2
         board_planes = torch.tensor(
-            encode_game_state(game_state),
+            encode_game_state(game_state, history_length=history_length),
             dtype=torch.float32,
             device=self.device,
         ).unsqueeze(0)
