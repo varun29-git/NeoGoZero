@@ -47,7 +47,7 @@ python3 policy_value_networks/convnext_policy_value/train_convnext_zero.py \
   --history-length 8 \
   --channels 256 \
   --blocks 20 \
-  --mcts-rounds 800 \
+  --mcts-rounds 300 \
   --self-play-games 25 \
   --training-steps 1000 \
   --evaluation-games 20 \

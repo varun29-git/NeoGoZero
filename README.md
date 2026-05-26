@@ -79,7 +79,7 @@ python3 play_and_train_commands/train_zero.py \
   --history-length 8 \
   --channels 256 \
   --res-blocks 20 \
-  --mcts-rounds 800 \
+  --mcts-rounds 300 \
   --self-play-games 25 \
   --training-steps 1000 \
   --evaluation-games 20 \
@@ -101,3 +101,14 @@ download bundle under `trained_model_weights/convnext_policy_value/`.
 
 In Colab, add `--auto-download-weights` to trigger a browser download after the
 bundle is created.
+
+Unattended T4 run for both 9x9 models:
+
+```bash
+nohup python3 play_and_train_commands/train_both_models_9x9_t4.py \
+  > train_both_models_9x9_t4.out 2>&1 &
+```
+
+This runs ResNet first, then ConvNeXt, and writes checkpoints, metrics, logs, and
+download bundles under `training_runs/t4_9x9/`. It prints ETA lines after each
+training iteration and during long quiet stretches.
