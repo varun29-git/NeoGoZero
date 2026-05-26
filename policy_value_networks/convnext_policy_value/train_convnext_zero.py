@@ -45,6 +45,7 @@ def main() -> None:
     parser.add_argument("--resume-checkpoint", type=Path, default=None)
     parser.add_argument("--metrics-path", type=Path, default=None)
     parser.add_argument("--seed", type=int, default=1)
+    parser.add_argument("--device", type=str, default="cpu")
     args = parser.parse_args()
 
     config = ConvNeXtTrainingConfig(
@@ -74,6 +75,7 @@ def main() -> None:
         resume_checkpoint=args.resume_checkpoint,
         metrics_path=args.metrics_path,
         seed=args.seed,
+        device=args.device,
     )
     result = run_convnext_training(config)
 

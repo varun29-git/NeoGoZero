@@ -148,6 +148,7 @@
 - Added `--history-length`, `--self-play-temperature`, `--temperature-drop-move`, `--dirichlet-alpha`, and `--dirichlet-epsilon` flags to `play_and_train_commands/train_zero.py`.
 - Added checkpoint resume support through `--resume-checkpoint`.
 - Added JSONL metrics writing for each training iteration.
+- Added `--device` to ResNet and ConvNeXt training commands so 9x9 runs can target CUDA/MPS-capable accelerators.
 - Added tests for temperature selection, Dirichlet noise, history planes, self-play history capture, metrics writing, and checkpoint resume.
 
 ### Next Direction

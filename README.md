@@ -82,7 +82,8 @@ python3 play_and_train_commands/train_zero.py \
   --mcts-rounds 800 \
   --self-play-games 25 \
   --training-steps 1000 \
-  --evaluation-games 20
+  --evaluation-games 20 \
+  --device cuda
 ```
 
 The default command is intentionally tiny so it can run as a smoke test on a laptop.

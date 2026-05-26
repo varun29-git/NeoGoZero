@@ -46,5 +46,6 @@ python3 policy_value_networks/convnext_policy_value/train_convnext_zero.py \
   --mcts-rounds 800 \
   --self-play-games 25 \
   --training-steps 1000 \
-  --evaluation-games 20
+  --evaluation-games 20 \
+  --device cuda
 ```
