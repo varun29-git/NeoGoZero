@@ -4,10 +4,10 @@ import random
 
 import pytest
 
-from neogozero_core.bots.random_bot import RandomBot
-from neogozero_core.evaluation.match import play_game, play_match
-from neogozero_core.go.game import GameState, Move
-from neogozero_core.go.types import Player, Point
+from search_players.random_bot import RandomBot
+from match_evaluation.match import play_game, play_match
+from go_engine.game import GameState, Move
+from go_engine.types import Player, Point
 
 
 class IllegalBot:

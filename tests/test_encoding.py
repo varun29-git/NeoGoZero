@@ -2,10 +2,10 @@ from __future__ import annotations
 
 import pytest
 
-from neogozero_core.go.board import Board
-from neogozero_core.go.game import GameState, Move
-from neogozero_core.go.types import Player, Point
-from neogozero_core.training.encoding import (
+from go_engine.board import Board
+from go_engine.game import GameState, Move
+from go_engine.types import Player, Point
+from zero_training_pipeline.encoding import (
     encode_board_history,
     encode_game_state,
     encode_policy,

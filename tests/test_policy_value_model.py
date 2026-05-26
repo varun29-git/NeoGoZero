@@ -6,15 +6,15 @@ import pytest
 
 torch = pytest.importorskip("torch")
 
-from neogozero_core.bots.mcts_bot import MCTSBot
-from neogozero_core.go.game import GameState
-from neogozero_core.models.policy_value import (
+from search_players.mcts_bot import MCTSBot
+from go_engine.game import GameState
+from policy_value_networks.resnet_policy_value.policy_value import (
     PolicyValueNet,
     ResidualBlock,
     TorchPolicyValueEvaluator,
 )
-from neogozero_core.training.self_play import generate_self_play_game
-from neogozero_core.training.torch_training import examples_to_tensors, train_step
+from zero_training_pipeline.self_play import generate_self_play_game
+from zero_training_pipeline.torch_training import examples_to_tensors, train_step
 
 
 def test_policy_value_network_forward_shapes() -> None:

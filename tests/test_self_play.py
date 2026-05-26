@@ -2,8 +2,8 @@ from __future__ import annotations
 
 import random
 
-from neogozero_core.bots.mcts_bot import MCTSBot
-from neogozero_core.training.self_play import generate_self_play_game
+from search_players.mcts_bot import MCTSBot
+from zero_training_pipeline.self_play import generate_self_play_game
 
 
 def test_self_play_generates_training_examples() -> None:

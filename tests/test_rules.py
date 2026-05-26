@@ -2,9 +2,9 @@ from __future__ import annotations
 
 import pytest
 
-from neogozero_core.go.board import Board
-from neogozero_core.go.game import GameState, Move
-from neogozero_core.go.types import Player, Point
+from go_engine.board import Board
+from go_engine.game import GameState, Move
+from go_engine.types import Player, Point
 
 
 def test_black_captures_one_white_stone() -> None:
@@ -135,7 +135,7 @@ def test_area_scoring_counts_stones_and_owned_empty_regions() -> None:
 
 
 def test_random_bots_can_finish_a_small_game() -> None:
-    from neogozero_core.bots.random_bot import RandomBot
+    from search_players.random_bot import RandomBot
 
     game = GameState.new_game(board_size=3)
     bots = {

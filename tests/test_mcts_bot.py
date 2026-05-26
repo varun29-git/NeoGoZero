@@ -4,15 +4,15 @@ import random
 
 import pytest
 
-from neogozero_core.bots.mcts_bot import (
+from search_players.mcts_bot import (
     Evaluation,
     MCTSBot,
     MCTSNode,
     _select_move_from_visit_counts,
 )
-from neogozero_core.bots.random_bot import RandomBot
-from neogozero_core.go.game import GameState, Move
-from neogozero_core.go.types import Player, Point
+from search_players.random_bot import RandomBot
+from go_engine.game import GameState, Move
+from go_engine.types import Player, Point
 
 
 def test_mcts_selects_a_legal_move() -> None:

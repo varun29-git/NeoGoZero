@@ -22,43 +22,43 @@ python3 -m pytest
 Run a random 9x9 game:
 
 ```bash
-python3 scripts/play_random_game.py
+python3 run_experiments/play_random_game.py
 ```
 
 Run a quick MCTS vs random smoke game:
 
 ```bash
-python3 scripts/play_mcts_vs_random.py
+python3 run_experiments/play_mcts_vs_random.py
 ```
 
 Run a small evaluation match:
 
 ```bash
-python3 scripts/evaluate_mcts_vs_random.py
+python3 run_experiments/evaluate_mcts_vs_random.py
 ```
 
 Generate one tiny self-play training game:
 
 ```bash
-python3 scripts/generate_self_play.py
+python3 run_experiments/generate_self_play.py
 ```
 
 Run a tiny policy-value training smoke test:
 
 ```bash
-python3 scripts/train_tiny_policy_value.py
+python3 run_experiments/train_tiny_policy_value.py
 ```
 
 Run the repeatable Zero training loop:
 
 ```bash
-python3 scripts/train_zero.py
+python3 run_experiments/train_zero.py
 ```
 
 Useful training flags:
 
 ```bash
-python3 scripts/train_zero.py \
+python3 run_experiments/train_zero.py \
   --board-size 9 \
   --history-length 8 \
   --channels 256 \
@@ -74,5 +74,5 @@ The default command is intentionally tiny so it can run as a smoke test on a lap
 ConvNeXt variant:
 
 ```bash
-python3 architectures.convnext_policy_value/train_convnext_zero.py
+python3 policy_value_networks/convnext_policy_value/train_convnext_zero.py
 ```
