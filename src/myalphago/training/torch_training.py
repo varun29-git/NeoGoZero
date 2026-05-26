@@ -13,10 +13,17 @@ from myalphago.training.self_play import TrainingExample
 def examples_to_tensors(
     examples: Sequence[TrainingExample],
     board_size: int,
+    history_length: int = 1,
     device: torch.device | str = "cpu",
 ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
     boards = [
-        encode_board_snapshot(example.board, example.player, board_size)
+        encode_board_snapshot(
+            example.board,
+            example.player,
+            board_size,
+            history_length=history_length,
+            board_history=example.board_history or (example.board,),
+        )
         for example in examples
     ]
     policies = [
@@ -48,12 +55,14 @@ def train_step(
     optimizer: torch.optim.Optimizer,
     examples: Sequence[TrainingExample],
     board_size: int,
+    history_length: int = 1,
     device: torch.device | str = "cpu",
 ) -> float:
     model.train()
     boards, target_policies, target_values = examples_to_tensors(
         examples,
         board_size=board_size,
+        history_length=history_length,
         device=device,
     )
 
