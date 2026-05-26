@@ -72,8 +72,9 @@ def test_encode_game_state_supports_history_planes() -> None:
     planes = encode_game_state(game, history_length=2)
 
     assert len(planes) == 5
-    assert planes[0][1][1] == 1
-    assert planes[3][0][0] == 1
+    assert planes[0][0][0] == 1
+    assert planes[1][1][1] == 1
+    assert planes[2][0][0] == 1
 
 
 def test_encode_board_history_pads_missing_positions() -> None:
