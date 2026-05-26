@@ -7,6 +7,11 @@ Current milestone:
 1. 9x9 Go rules engine
 2. Random bot smoke play
 3. Basic MCTS bot
+4. PUCT evaluator interface
+5. Match evaluation harness
+6. Self-play data generation
+7. Neural-network encoding contract
+8. Tiny policy-value neural network
 
 Run tests:
 
@@ -24,4 +29,22 @@ Run a quick MCTS vs random smoke game:
 
 ```bash
 python3 scripts/play_mcts_vs_random.py
+```
+
+Run a small evaluation match:
+
+```bash
+python3 scripts/evaluate_mcts_vs_random.py
+```
+
+Generate one tiny self-play training game:
+
+```bash
+python3 scripts/generate_self_play.py
+```
+
+Run a tiny policy-value training smoke test:
+
+```bash
+python3 scripts/train_tiny_policy_value.py
 ```

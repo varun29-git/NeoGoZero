@@ -4,10 +4,10 @@ import random
 
 import pytest
 
-from myalphago.bots.mcts_bot import MCTSBot
+from myalphago.bots.mcts_bot import Evaluation, MCTSBot, MCTSNode
 from myalphago.bots.random_bot import RandomBot
 from myalphago.go.game import GameState, Move
-from myalphago.go.types import Player
+from myalphago.go.types import Player, Point
 
 
 def test_mcts_selects_a_legal_move() -> None:
@@ -48,3 +48,63 @@ def test_mcts_rejects_move_selection_after_game_over() -> None:
 
     with pytest.raises(ValueError):
         bot.select_move(game)
+
+
+def test_puct_selection_uses_prior_probability() -> None:
+    game = GameState.new_game(board_size=3)
+    parent = MCTSNode(game_state=game)
+    parent.num_rollouts = 10
+
+    low_prior_child = MCTSNode(
+        game_state=game.apply_move(Move.play(Point(1, 1))),
+        parent=parent,
+        move=Move.play(Point(1, 1)),
+        prior_probability=0.1,
+    )
+    high_prior_child = MCTSNode(
+        game_state=game.apply_move(Move.play(Point(2, 2))),
+        parent=parent,
+        move=Move.play(Point(2, 2)),
+        prior_probability=0.9,
+    )
+    for child in (low_prior_child, high_prior_child):
+        child.num_rollouts = 2
+        child.value_sum = 0.0
+    parent.children = [low_prior_child, high_prior_child]
+
+    assert parent.select_child(c_puct=1.5) is high_prior_child
+
+
+def test_evaluation_normalizes_legal_priors_and_clamps_value() -> None:
+    game = GameState.new_game(board_size=3)
+    move_a = Move.play(Point(1, 1))
+    move_b = Move.play(Point(1, 2))
+    illegal_move = Move.play(Point(4, 4))
+
+    evaluation = Evaluation.from_priors(
+        game,
+        {
+            move_a: 2.0,
+            move_b: 1.0,
+            illegal_move: 100.0,
+        },
+        value=3.0,
+    )
+
+    assert evaluation.move_priors == {
+        move_a: pytest.approx(2 / 3),
+        move_b: pytest.approx(1 / 3),
+    }
+    assert evaluation.value == 1.0
+
+
+def test_mcts_can_use_a_custom_evaluator_prior() -> None:
+    class CenterPriorEvaluator:
+        def evaluate(self, game_state: GameState) -> Evaluation:
+            center = Move.play(Point(2, 2))
+            return Evaluation.from_priors(game_state, {center: 1.0}, value=0.0)
+
+    game = GameState.new_game(board_size=3)
+    bot = MCTSBot(num_rounds=2, evaluator=CenterPriorEvaluator())
+
+    assert bot.select_move(game) == Move.play(Point(2, 2))
