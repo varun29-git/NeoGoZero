@@ -21,10 +21,17 @@ def main() -> None:
     parser.add_argument("--learning-rate", type=float, default=0.01)
     parser.add_argument("--channels", type=int, default=16)
     parser.add_argument("--res-blocks", type=int, default=2)
+    parser.add_argument("--history-length", type=int, default=1)
     parser.add_argument("--replay-buffer-size", type=int, default=1000)
     parser.add_argument("--evaluation-games", type=int, default=0)
     parser.add_argument("--promotion-threshold", type=float, default=0.55)
+    parser.add_argument("--self-play-temperature", type=float, default=1.0)
+    parser.add_argument("--temperature-drop-move", type=int, default=30)
+    parser.add_argument("--dirichlet-alpha", type=float, default=0.03)
+    parser.add_argument("--dirichlet-epsilon", type=float, default=0.25)
     parser.add_argument("--checkpoint-dir", type=Path, default=Path("checkpoints"))
+    parser.add_argument("--resume-checkpoint", type=Path, default=None)
+    parser.add_argument("--metrics-path", type=Path, default=None)
     parser.add_argument("--seed", type=int, default=1)
     args = parser.parse_args()
 
@@ -39,10 +46,17 @@ def main() -> None:
         learning_rate=args.learning_rate,
         channels=args.channels,
         num_res_blocks=args.res_blocks,
+        history_length=args.history_length,
         replay_buffer_size=args.replay_buffer_size,
         evaluation_games=args.evaluation_games,
         promotion_threshold=args.promotion_threshold,
+        self_play_temperature=args.self_play_temperature,
+        temperature_drop_move=args.temperature_drop_move,
+        dirichlet_alpha=args.dirichlet_alpha,
+        dirichlet_epsilon=args.dirichlet_epsilon,
         checkpoint_dir=args.checkpoint_dir,
+        resume_checkpoint=args.resume_checkpoint,
+        metrics_path=args.metrics_path,
         seed=args.seed,
     )
     result = run_zero_training(config)
