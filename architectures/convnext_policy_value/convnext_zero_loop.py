@@ -8,16 +8,16 @@ from pathlib import Path
 
 import torch
 
-from convnext_impl.convnext_policy_value import (
+from architectures.convnext_policy_value.convnext_policy_value import (
     ConvNeXtPolicyValueEvaluator,
     ConvNeXtPolicyValueNet,
 )
-from myalphago.bots.mcts_bot import MCTSBot
-from myalphago.evaluation.match import play_game
-from myalphago.go.types import Player
-from myalphago.training.self_play import TrainingExample, generate_self_play_game
-from myalphago.training.torch_training import train_step
-from myalphago.training.zero_loop import (
+from neogozero_core.bots.mcts_bot import MCTSBot
+from neogozero_core.evaluation.match import play_game
+from neogozero_core.go.types import Player
+from neogozero_core.training.self_play import TrainingExample, generate_self_play_game
+from neogozero_core.training.torch_training import train_step
+from neogozero_core.training.zero_loop import (
     ReplayBuffer,
     TrainingIterationResult,
     TrainingRunResult,
@@ -48,7 +48,7 @@ class ConvNeXtTrainingConfig:
     temperature_drop_move: int = 30
     dirichlet_alpha: float = 0.03
     dirichlet_epsilon: float = 0.25
-    checkpoint_dir: Path = Path("convnext_checkpoints")
+    checkpoint_dir: Path = Path("checkpoints_convnext_policy_value")
     resume_checkpoint: Path | None = None
     metrics_path: Path | None = None
     seed: int = 1

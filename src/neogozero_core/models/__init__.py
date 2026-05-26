@@ -1,6 +1,6 @@
 """Neural network models and evaluators."""
 
-from myalphago.models.policy_value import (
+from neogozero_core.models.policy_value import (
     PolicyValueNet,
     ResidualBlock,
     TorchPolicyValueEvaluator,

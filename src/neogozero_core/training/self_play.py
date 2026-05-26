@@ -2,9 +2,9 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from myalphago.bots.mcts_bot import MCTSBot
-from myalphago.go.game import GameState, Move
-from myalphago.go.types import Player
+from neogozero_core.bots.mcts_bot import MCTSBot
+from neogozero_core.go.game import GameState, Move
+from neogozero_core.go.types import Player
 
 
 BoardSnapshot = tuple[tuple[int, int, str], ...]

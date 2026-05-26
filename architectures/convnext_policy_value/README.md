@@ -27,18 +27,18 @@ board grid intact.
 - `convnext_policy_value.py`: ConvNeXt policy-value network and evaluator.
 - `convnext_zero_loop.py`: repeatable training loop with checkpoints and metrics.
 - `train_convnext_zero.py`: CLI entrypoint.
-- `test_convnext_impl.py`: smoke and checkpoint tests.
+- `test_architectures.convnext_policy_value.py`: smoke and checkpoint tests.
 
 ## Smoke Run
 
 ```bash
-python3 convnext_impl/train_convnext_zero.py
+python3 architectures.convnext_policy_value/train_convnext_zero.py
 ```
 
 ## Larger 9x9 Shape
 
 ```bash
-python3 convnext_impl/train_convnext_zero.py \
+python3 architectures.convnext_policy_value/train_convnext_zero.py \
   --board-size 9 \
   --history-length 8 \
   --channels 256 \

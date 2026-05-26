@@ -4,10 +4,10 @@ import random
 
 import pytest
 
-from myalphago.bots.random_bot import RandomBot
-from myalphago.evaluation.match import play_game, play_match
-from myalphago.go.game import GameState, Move
-from myalphago.go.types import Player, Point
+from neogozero_core.bots.random_bot import RandomBot
+from neogozero_core.evaluation.match import play_game, play_match
+from neogozero_core.go.game import GameState, Move
+from neogozero_core.go.types import Player, Point
 
 
 class IllegalBot:

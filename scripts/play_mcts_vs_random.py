@@ -6,10 +6,10 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
-from myalphago.bots.mcts_bot import MCTSBot
-from myalphago.bots.random_bot import RandomBot
-from myalphago.go.game import GameState
-from myalphago.go.types import Player
+from neogozero_core.bots.mcts_bot import MCTSBot
+from neogozero_core.bots.random_bot import RandomBot
+from neogozero_core.go.game import GameState
+from neogozero_core.go.types import Player
 
 
 def main() -> None:

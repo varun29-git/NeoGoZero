@@ -41,7 +41,7 @@
 
 - Renamed the repo folder from `MyAlphaGo` to `NeoGoZero`.
 - Updated the README title and project metadata to use `NeoGoZero`.
-- Kept the Python import package as `myalphago` for stability during early development.
+- Kept the Python import package as `neogozero_core` for stability during early development.
 - Moved the repo out of `/Users/varundaiya/1bit_llm_advanced` so it lives as its own standalone project at `/Users/varundaiya/NeoGoZero`.
 
 ### Milestone 2: Basic PUCT Bot
@@ -70,7 +70,7 @@
 
 ### Milestone 4: Match Evaluation Harness
 
-- Added a reusable match harness in `myalphago.evaluation`.
+- Added a reusable match harness in `neogozero_core.evaluation`.
 - Implemented:
   - `play_game`
   - `play_match`
@@ -87,7 +87,7 @@
 
 ### Milestone 5: Self-Play Data
 
-- Added self-play generation in `myalphago.training.self_play`.
+- Added self-play generation in `neogozero_core.training.self_play`.
 - Each self-play position stores:
   - Board snapshot
   - Player to move
@@ -99,7 +99,7 @@
 
 ### Milestone 6: Neural-Network Encoding Contract
 
-- Added board and policy encoding helpers in `myalphago.training.encoding`.
+- Added board and policy encoding helpers in `neogozero_core.training.encoding`.
 - Implemented:
   - Current-player board planes
   - Opponent board planes
@@ -157,7 +157,7 @@
 
 ### Milestone 10: ConvNeXt Variant
 
-- Researched ConvNeXt's block structure and added a separate implementation in `convnext_impl/`.
+- Researched ConvNeXt's block structure and added a separate implementation in `architectures.convnext_policy_value/`.
 - Added a ConvNeXt-style policy-value model with:
   - Depthwise 7x7 convolution
   - Channel LayerNorm

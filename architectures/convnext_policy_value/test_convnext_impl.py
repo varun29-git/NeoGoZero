@@ -6,21 +6,21 @@ import pytest
 
 torch = pytest.importorskip("torch")
 
-from convnext_impl.convnext_policy_value import (
+from architectures.convnext_policy_value.convnext_policy_value import (
     ConvNeXtBlock,
     ConvNeXtPolicyValueEvaluator,
     ConvNeXtPolicyValueNet,
     LayerNorm2d,
 )
-from convnext_impl.convnext_zero_loop import (
+from architectures.convnext_policy_value.convnext_zero_loop import (
     ConvNeXtTrainingConfig,
     load_convnext_checkpoint,
     run_convnext_training,
 )
-from myalphago.bots.mcts_bot import MCTSBot
-from myalphago.go.game import GameState
-from myalphago.training.self_play import generate_self_play_game
-from myalphago.training.torch_training import train_step
+from neogozero_core.bots.mcts_bot import MCTSBot
+from neogozero_core.go.game import GameState
+from neogozero_core.training.self_play import generate_self_play_game
+from neogozero_core.training.torch_training import train_step
 
 
 def test_convnext_forward_shapes() -> None:

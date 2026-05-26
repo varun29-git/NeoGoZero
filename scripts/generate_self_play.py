@@ -6,8 +6,8 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
-from myalphago.bots.mcts_bot import MCTSBot
-from myalphago.training.self_play import generate_self_play_game
+from neogozero_core.bots.mcts_bot import MCTSBot
+from neogozero_core.training.self_play import generate_self_play_game
 
 
 def main() -> None:

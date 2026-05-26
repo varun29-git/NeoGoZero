@@ -7,7 +7,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from convnext_impl.convnext_zero_loop import (
+from architectures.convnext_policy_value.convnext_zero_loop import (
     ConvNeXtTrainingConfig,
     run_convnext_training,
 )
@@ -40,7 +40,7 @@ def main() -> None:
     parser.add_argument(
         "--checkpoint-dir",
         type=Path,
-        default=Path("convnext_checkpoints"),
+        default=Path("checkpoints_convnext_policy_value"),
     )
     parser.add_argument("--resume-checkpoint", type=Path, default=None)
     parser.add_argument("--metrics-path", type=Path, default=None)

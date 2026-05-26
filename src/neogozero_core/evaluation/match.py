@@ -4,8 +4,8 @@ from collections.abc import Callable
 from dataclasses import dataclass
 from typing import Protocol
 
-from myalphago.go.game import GameState, Move, Score
-from myalphago.go.types import Player
+from neogozero_core.go.game import GameState, Move, Score
+from neogozero_core.go.types import Player
 
 
 class Bot(Protocol):

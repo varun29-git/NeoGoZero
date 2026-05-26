@@ -8,12 +8,12 @@ from pathlib import Path
 
 import torch
 
-from myalphago.bots.mcts_bot import MCTSBot
-from myalphago.evaluation.match import play_game
-from myalphago.go.types import Player
-from myalphago.models.policy_value import PolicyValueNet, TorchPolicyValueEvaluator
-from myalphago.training.self_play import TrainingExample, generate_self_play_game
-from myalphago.training.torch_training import train_step
+from neogozero_core.bots.mcts_bot import MCTSBot
+from neogozero_core.evaluation.match import play_game
+from neogozero_core.go.types import Player
+from neogozero_core.models.policy_value import PolicyValueNet, TorchPolicyValueEvaluator
+from neogozero_core.training.self_play import TrainingExample, generate_self_play_game
+from neogozero_core.training.torch_training import train_step
 
 
 @dataclass(frozen=True)

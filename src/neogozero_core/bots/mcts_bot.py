@@ -5,8 +5,8 @@ import random
 from dataclasses import dataclass, field
 from typing import Protocol
 
-from myalphago.go.game import GameState, Move
-from myalphago.go.types import Player
+from neogozero_core.go.game import GameState, Move
+from neogozero_core.go.types import Player
 
 
 @dataclass(frozen=True)

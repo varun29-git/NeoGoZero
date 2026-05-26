@@ -5,9 +5,9 @@ from dataclasses import dataclass
 import torch
 from torch import nn
 
-from myalphago.bots.mcts_bot import Evaluation
-from myalphago.go.game import GameState
-from myalphago.training.encoding import encode_game_state, move_to_index
+from neogozero_core.bots.mcts_bot import Evaluation
+from neogozero_core.go.game import GameState
+from neogozero_core.training.encoding import encode_game_state, move_to_index
 
 
 class ResidualBlock(nn.Module):

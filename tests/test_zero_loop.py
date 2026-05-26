@@ -6,9 +6,9 @@ import pytest
 
 torch = pytest.importorskip("torch")
 
-from myalphago.go.types import Player
-from myalphago.training.self_play import TrainingExample
-from myalphago.training.zero_loop import (
+from neogozero_core.go.types import Player
+from neogozero_core.training.self_play import TrainingExample
+from neogozero_core.training.zero_loop import (
     ReplayBuffer,
     ZeroTrainingConfig,
     load_checkpoint,

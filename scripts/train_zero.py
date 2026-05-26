@@ -6,7 +6,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
-from myalphago.training.zero_loop import ZeroTrainingConfig, run_zero_training
+from neogozero_core.training.zero_loop import ZeroTrainingConfig, run_zero_training
 
 
 def main() -> None:

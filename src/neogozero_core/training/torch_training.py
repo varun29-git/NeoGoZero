@@ -5,9 +5,9 @@ from collections.abc import Sequence
 import torch
 import torch.nn.functional as F
 
-from myalphago.models.policy_value import PolicyValueNet
-from myalphago.training.encoding import encode_board_snapshot, encode_policy
-from myalphago.training.self_play import TrainingExample
+from neogozero_core.models.policy_value import PolicyValueNet
+from neogozero_core.training.encoding import encode_board_snapshot, encode_policy
+from neogozero_core.training.self_play import TrainingExample
 
 
 def examples_to_tensors(

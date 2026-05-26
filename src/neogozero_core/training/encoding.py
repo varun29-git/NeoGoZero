@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-from myalphago.go.game import GameState, Move
-from myalphago.go.types import Player, Point
+from neogozero_core.go.game import GameState, Move
+from neogozero_core.go.types import Player, Point
 
 BoardPlanes = tuple[tuple[tuple[int, ...], ...], ...]
 PolicyVector = tuple[float, ...]

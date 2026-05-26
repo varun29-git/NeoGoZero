@@ -3,7 +3,7 @@ from __future__ import annotations
 import random
 from dataclasses import dataclass, field
 
-from myalphago.go.game import GameState, Move
+from neogozero_core.go.game import GameState, Move
 
 
 @dataclass

@@ -2,10 +2,10 @@ from __future__ import annotations
 
 import pytest
 
-from myalphago.go.board import Board
-from myalphago.go.game import GameState, Move
-from myalphago.go.types import Player, Point
-from myalphago.training.encoding import (
+from neogozero_core.go.board import Board
+from neogozero_core.go.game import GameState, Move
+from neogozero_core.go.types import Player, Point
+from neogozero_core.training.encoding import (
     encode_board_history,
     encode_game_state,
     encode_policy,

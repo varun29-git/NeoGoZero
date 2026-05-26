@@ -74,5 +74,5 @@ The default command is intentionally tiny so it can run as a smoke test on a lap
 ConvNeXt variant:
 
 ```bash
-python3 convnext_impl/train_convnext_zero.py
+python3 architectures.convnext_policy_value/train_convnext_zero.py
 ```

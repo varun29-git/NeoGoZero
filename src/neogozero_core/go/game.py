@@ -2,8 +2,8 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from myalphago.go.board import Board
-from myalphago.go.types import Player, Point
+from neogozero_core.go.board import Board
+from neogozero_core.go.types import Player, Point
 
 
 @dataclass(frozen=True)

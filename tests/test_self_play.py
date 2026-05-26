@@ -2,8 +2,8 @@ from __future__ import annotations
 
 import random
 
-from myalphago.bots.mcts_bot import MCTSBot
-from myalphago.training.self_play import generate_self_play_game
+from neogozero_core.bots.mcts_bot import MCTSBot
+from neogozero_core.training.self_play import generate_self_play_game
 
 
 def test_self_play_generates_training_examples() -> None:
