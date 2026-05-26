@@ -8,19 +8,30 @@ torch = pytest.importorskip("torch")
 
 from myalphago.bots.mcts_bot import MCTSBot
 from myalphago.go.game import GameState
-from myalphago.models.policy_value import PolicyValueNet, TorchPolicyValueEvaluator
+from myalphago.models.policy_value import (
+    PolicyValueNet,
+    ResidualBlock,
+    TorchPolicyValueEvaluator,
+)
 from myalphago.training.self_play import generate_self_play_game
 from myalphago.training.torch_training import examples_to_tensors, train_step
 
 
 def test_policy_value_network_forward_shapes() -> None:
-    model = PolicyValueNet(board_size=3, channels=8)
+    model = PolicyValueNet(board_size=3, channels=8, num_res_blocks=2)
     boards = torch.zeros((2, 3, 3, 3), dtype=torch.float32)
 
     policy_logits, values = model(boards)
 
     assert policy_logits.shape == (2, 10)
     assert values.shape == (2,)
+
+
+def test_policy_value_network_uses_residual_tower() -> None:
+    model = PolicyValueNet(board_size=3, channels=8, num_res_blocks=3)
+
+    assert len(model.residual_tower) == 3
+    assert all(isinstance(block, ResidualBlock) for block in model.residual_tower)
 
 
 def test_examples_to_tensors_shapes() -> None:
@@ -37,7 +48,7 @@ def test_examples_to_tensors_shapes() -> None:
 def test_train_step_returns_finite_loss() -> None:
     bot = MCTSBot(num_rounds=2, max_rollout_moves=6, rng=random.Random(1))
     game = generate_self_play_game(bot, board_size=3, max_moves=12)
-    model = PolicyValueNet(board_size=3, channels=8)
+    model = PolicyValueNet(board_size=3, channels=8, num_res_blocks=2)
     optimizer = torch.optim.SGD(model.parameters(), lr=0.01)
 
     loss = train_step(model, optimizer, game.examples[:4], board_size=3)
@@ -48,7 +59,7 @@ def test_train_step_returns_finite_loss() -> None:
 
 def test_torch_evaluator_returns_legal_priors() -> None:
     game = GameState.new_game(board_size=3)
-    model = PolicyValueNet(board_size=3, channels=8)
+    model = PolicyValueNet(board_size=3, channels=8, num_res_blocks=2)
     evaluator = TorchPolicyValueEvaluator(model)
 
     evaluation = evaluator.evaluate(game)

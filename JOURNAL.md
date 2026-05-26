@@ -109,12 +109,15 @@
   - Visit-distribution-to-policy-vector encoding
 - Added tests for board encoding, policy encoding, pass moves, and index round trips.
 
-### Milestone 7: Policy-Value Network
+### Milestone 7: ResNet Policy-Value Network
 
-- Added `PolicyValueNet`, a compact PyTorch model with:
+- Added `PolicyValueNet`, an AlphaGo Zero-style PyTorch model with:
+  - Initial convolution, batch norm, and ReLU stem
+  - Configurable residual tower
   - Shared convolutional body
   - Policy head over all board points plus pass
   - Value head in `[-1, 1]`
+- Defaults mimic the real AlphaGo Zero architecture shape with 256 channels and 20 residual blocks, while scripts/tests can request smaller versions for fast local smoke runs.
 - Added `TorchPolicyValueEvaluator` so PUCT can consume neural priors and values.
 - Added tensor conversion from self-play examples.
 - Added policy-value loss and a single `train_step` helper.

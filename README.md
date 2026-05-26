@@ -11,7 +11,7 @@ Current milestone:
 5. Match evaluation harness
 6. Self-play data generation
 7. Neural-network encoding contract
-8. Tiny policy-value neural network
+8. ResNet-style policy-value neural network
 
 Run tests:
 
