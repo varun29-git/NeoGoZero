@@ -70,3 +70,9 @@ python3 scripts/train_zero.py \
 ```
 
 The default command is intentionally tiny so it can run as a smoke test on a laptop.
+
+ConvNeXt variant:
+
+```bash
+python3 convnext_impl/train_convnext_zero.py
+```
