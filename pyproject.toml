@@ -14,5 +14,5 @@ dev = ["pytest>=8"]
 ml = ["torch>=2.2"]
 
 [tool.pytest.ini_options]
-testpaths = ["tests"]
-pythonpath = ["src"]
+testpaths = ["tests", "policy_value_networks/convnext_policy_value"]
+pythonpath = ["."]
