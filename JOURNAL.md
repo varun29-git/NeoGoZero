@@ -44,30 +44,22 @@
 - Kept the Python import package as `myalphago` for stability during early development.
 - Moved the repo out of `/Users/varundaiya/1bit_llm_advanced` so it lives as its own standalone project at `/Users/varundaiya/NeoGoZero`.
 
-### Current Direction
-
-- Next milestone is a basic Monte Carlo Tree Search bot.
-- This MCTS bot will not use neural networks yet.
-- The goal is to reach `MCTSBot vs RandomBot` before introducing policy or value networks.
-
-### Milestone 2: Basic MCTS Bot
+### Milestone 2: Basic PUCT Bot
 
 - Added `MCTSNode` and `MCTSBot`.
-- Implemented the four classical MCTS steps:
+- Implemented the four classical tree-search steps:
   - Selection with PUCT
-  - Expansion from unvisited legal moves
-  - Random rollout
-  - Backpropagation of the winning player
-- Used uniform move priors for now, with the selection formula structured for future policy-network priors.
+  - Expansion from move priors
+  - Evaluation
+  - Signed value backpropagation
+- Used uniform move priors with random rollout values as the temporary evaluator.
 - Added rollout limits so early experiments stay bounded.
 - Added `scripts/play_mcts_vs_random.py` for a quick MCTS-vs-random smoke match.
-- Added tests for MCTS legal move selection, small-game play, and game-over handling.
-- Verified the expanded suite with `python3 -m pytest`.
-- Ran the MCTS-vs-random smoke script successfully.
+- Added tests for MCTS legal move selection, small-game play, PUCT prior selection, custom evaluator behavior, and game-over handling.
 
 ### Milestone 3: PUCT Evaluator Interface
 
-- Refactored the MCTS implementation to be more AlphaGo Zero-shaped.
+- Refactored the search implementation to be more AlphaGo Zero-shaped.
 - Added an `Evaluator` protocol that returns:
   - Move priors
   - A scalar value from the next player's perspective
@@ -75,7 +67,6 @@
 - Added `RandomRolloutEvaluator` as the temporary value source until a neural value head exists.
 - Changed MCTS backpropagation from win-count tracking to signed scalar value backup.
 - Added `SearchResult` so MCTS can expose visit counts and visit distributions for policy training.
-- Added tests for prior normalization, PUCT prior selection, and custom evaluator behavior.
 
 ### Milestone 4: Match Evaluation Harness
 

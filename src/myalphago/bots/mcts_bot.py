@@ -192,7 +192,10 @@ class MCTSBot:
         if not legal_moves:
             raise ValueError("cannot select a move after the game is over")
         if len(legal_moves) == 1:
-            return SearchResult(selected_move=legal_moves[0], visit_counts={legal_moves[0]: 1})
+            return SearchResult(
+                selected_move=legal_moves[0],
+                visit_counts={legal_moves[0]: 1},
+            )
 
         root = MCTSNode(game_state)
 
