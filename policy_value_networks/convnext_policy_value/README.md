@@ -27,7 +27,7 @@ board grid intact.
 - `convnext_policy_value.py`: ConvNeXt policy-value network and evaluator.
 - `convnext_zero_loop.py`: repeatable training loop with checkpoints and metrics.
 - `train_convnext_zero.py`: CLI entrypoint.
-- `test_convnext_impl.py`: smoke and checkpoint tests.
+- `test_convnext_policy_value.py`: smoke and checkpoint tests.
 
 ## Smoke Run
 

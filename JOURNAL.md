@@ -33,7 +33,7 @@
   - Area scoring with komi
   - Winner selection
 - Added a `RandomBot` that chooses uniformly from legal moves.
-- Added `run_experiments/play_random_game.py` so two random bots can complete a full game.
+- Added `play_and_train_commands/play_random_game.py` so two random bots can complete a full game.
 - Added tests covering captures, group captures, suicide, capture-not-suicide, ko, passing, scoring, and random bot completion.
 - Verified the rules milestone with `python3 -m pytest`.
 
@@ -42,6 +42,7 @@
 - Renamed the repo folder from `MyAlphaGo` to `NeoGoZero`.
 - Updated the README title and project metadata to use `NeoGoZero`.
 - Split the code into explicit top-level packages: `go_engine`, `search_players`, `match_evaluation`, `zero_training_pipeline`, and `policy_value_networks`.
+- Renamed the command folder to `play_and_train_commands` so the runnable files describe their purpose instead of sitting under a generic scripts folder.
 - Moved the repo out of `/Users/varundaiya/1bit_llm_advanced` so it lives as its own standalone project at `/Users/varundaiya/NeoGoZero`.
 
 ### Milestone 2: Basic PUCT Bot
@@ -54,7 +55,7 @@
   - Signed value backpropagation
 - Used uniform move priors with random rollout values as the temporary evaluator.
 - Added rollout limits so early experiments stay bounded.
-- Added `run_experiments/play_mcts_vs_random.py` for a quick MCTS-vs-random smoke match.
+- Added `play_and_train_commands/play_mcts_vs_random.py` for a quick MCTS-vs-random smoke match.
 - Added tests for MCTS legal move selection, small-game play, PUCT prior selection, custom evaluator behavior, and game-over handling.
 
 ### Milestone 3: PUCT Evaluator Interface
@@ -82,7 +83,7 @@
   - Win rate
   - Average moves
   - Average margin
-- Added `run_experiments/evaluate_mcts_vs_random.py` for quick multi-game bot evaluation.
+- Added `play_and_train_commands/evaluate_mcts_vs_random.py` for quick multi-game bot evaluation.
 - Added tests for completed games, match aggregation, and illegal bot move rejection.
 
 ### Milestone 5: Self-Play Data
@@ -94,7 +95,7 @@
   - MCTS visit distribution
   - Final winner
   - Training value target
-- Added `run_experiments/generate_self_play.py` for a tiny self-play smoke run.
+- Added `play_and_train_commands/generate_self_play.py` for a tiny self-play smoke run.
 - Added tests that verify self-play produces completed games and training examples.
 
 ### Milestone 6: Neural-Network Encoding Contract
@@ -117,11 +118,11 @@
   - Shared convolutional body
   - Policy head over all board points plus pass
   - Value head in `[-1, 1]`
-- Defaults mimic the real AlphaGo Zero architecture shape with 256 channels and 20 residual blocks, while run_experiments/tests can request smaller versions for fast local smoke runs.
+- Defaults mimic the real AlphaGo Zero architecture shape with 256 channels and 20 residual blocks, while commands and tests can request smaller versions for fast local smoke runs.
 - Added `TorchPolicyValueEvaluator` so PUCT can consume neural priors and values.
 - Added tensor conversion from self-play examples.
 - Added policy-value loss and a single `train_step` helper.
-- Added `run_experiments/train_tiny_policy_value.py` for a tiny self-play-to-training smoke path.
+- Added `play_and_train_commands/train_tiny_policy_value.py` for a tiny self-play-to-training smoke path.
 - Added tests for model output shapes, tensor conversion, training loss, and neural evaluator priors.
 
 ### Milestone 8: Repeatable Zero Training Loop
@@ -135,7 +136,7 @@
   - Model promotion or rollback
   - Checkpoint saving
 - Added checkpoint loading for model, optimizer, config, and replay examples.
-- Added `run_experiments/train_zero.py` as the main repeatable training entrypoint.
+- Added `play_and_train_commands/train_zero.py` as the main repeatable training entrypoint.
 - Added tests for replay-buffer behavior and checkpoint round trips.
 
 ### Milestone 9: Training-Ready Self-Play Features
@@ -144,7 +145,7 @@
 - Added root Dirichlet noise for self-play exploration.
 - Added configurable history-plane encoding.
 - Set the standalone ResNet model default to 17 input planes, matching 8 history positions plus the side-to-move plane.
-- Added `--history-length`, `--self-play-temperature`, `--temperature-drop-move`, `--dirichlet-alpha`, and `--dirichlet-epsilon` flags to `run_experiments/train_zero.py`.
+- Added `--history-length`, `--self-play-temperature`, `--temperature-drop-move`, `--dirichlet-alpha`, and `--dirichlet-epsilon` flags to `play_and_train_commands/train_zero.py`.
 - Added checkpoint resume support through `--resume-checkpoint`.
 - Added JSONL metrics writing for each training iteration.
 - Added tests for temperature selection, Dirichlet noise, history planes, self-play history capture, metrics writing, and checkpoint resume.

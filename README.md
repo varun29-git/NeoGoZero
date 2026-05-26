@@ -12,6 +12,8 @@ Current milestone:
 6. Self-play data generation
 7. Neural-network encoding contract
 8. ResNet-style policy-value neural network
+9. Repeatable Zero training loop with checkpoints and metrics
+10. ConvNeXt policy-value network variant
 
 Project layout:
 
@@ -23,7 +25,7 @@ zero_training_pipeline/            Self-play, replay buffer, training loop
 policy_value_networks/
   resnet_policy_value/             AlphaGo Zero-style ResNet policy-value net
   convnext_policy_value/           ConvNeXt policy-value net variant
-run_experiments/                   Commands you run while developing/training
+play_and_train_commands/           Play games, generate data, and launch training
 tests/                             Core test suite
 ```
 
@@ -36,43 +38,43 @@ python3 -m pytest
 Run a random 9x9 game:
 
 ```bash
-python3 run_experiments/play_random_game.py
+python3 play_and_train_commands/play_random_game.py
 ```
 
 Run a quick MCTS vs random smoke game:
 
 ```bash
-python3 run_experiments/play_mcts_vs_random.py
+python3 play_and_train_commands/play_mcts_vs_random.py
 ```
 
 Run a small evaluation match:
 
 ```bash
-python3 run_experiments/evaluate_mcts_vs_random.py
+python3 play_and_train_commands/evaluate_mcts_vs_random.py
 ```
 
 Generate one tiny self-play training game:
 
 ```bash
-python3 run_experiments/generate_self_play.py
+python3 play_and_train_commands/generate_self_play.py
 ```
 
 Run a tiny policy-value training smoke test:
 
 ```bash
-python3 run_experiments/train_tiny_policy_value.py
+python3 play_and_train_commands/train_tiny_policy_value.py
 ```
 
 Run the repeatable Zero training loop:
 
 ```bash
-python3 run_experiments/train_zero.py
+python3 play_and_train_commands/train_zero.py
 ```
 
 Useful training flags:
 
 ```bash
-python3 run_experiments/train_zero.py \
+python3 play_and_train_commands/train_zero.py \
   --board-size 9 \
   --history-length 8 \
   --channels 256 \
