@@ -1,1 +1,1 @@
-"""MyAlphaGo package."""
+"""NeoGoZero package."""
