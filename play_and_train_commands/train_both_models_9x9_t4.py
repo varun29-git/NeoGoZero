@@ -27,8 +27,24 @@ def main() -> None:
     parser.add_argument("--batch-size", type=int, default=128)
     parser.add_argument("--replay-buffer-size", type=int, default=50_000)
     parser.add_argument("--learning-rate", type=float, default=0.001)
+    parser.add_argument("--supervised-sgf-dir", type=Path, default=Path("supervised_go_data/sgf_9x9"))
+    parser.add_argument("--supervised-steps", type=int, default=1_000)
+    parser.add_argument("--supervised-max-examples", type=int, default=None)
+    parser.add_argument("--supervised-batch-size", type=int, default=128)
+    parser.add_argument("--skip-supervised-pretraining", action="store_true")
     parser.add_argument("--dry-run", action="store_true")
     args = parser.parse_args()
+
+    if (
+        not args.skip_supervised_pretraining
+        and not args.supervised_sgf_dir.exists()
+        and not args.dry_run
+    ):
+        raise SystemExit(
+            "Supervised pretraining data is required before self-play. "
+            f"Put 9x9 SGF files in {args.supervised_sgf_dir} "
+            "or pass --supervised-sgf-dir /path/to/sgfs."
+        )
 
     run_id = datetime.now().strftime("%Y%m%d_%H%M%S")
     run_dir = args.output_dir / run_id
@@ -76,6 +92,20 @@ def main() -> None:
         "--seed",
         "1",
     ]
+    if not args.skip_supervised_pretraining:
+        resnet_command.extend(
+            [
+                "--supervised-sgf-dir",
+                str(args.supervised_sgf_dir),
+                "--supervised-steps",
+                str(args.supervised_steps),
+                "--supervised-batch-size",
+                str(args.supervised_batch_size),
+            ]
+        )
+        if args.supervised_max_examples is not None:
+            resnet_command.extend(["--supervised-max-examples", str(args.supervised_max_examples)])
+
     convnext_command = [
         sys.executable,
         "policy_value_networks/convnext_policy_value/train_convnext_zero.py",
@@ -116,6 +146,19 @@ def main() -> None:
         "--seed",
         "2",
     ]
+    if not args.skip_supervised_pretraining:
+        convnext_command.extend(
+            [
+                "--supervised-sgf-dir",
+                str(args.supervised_sgf_dir),
+                "--supervised-steps",
+                str(args.supervised_steps),
+                "--supervised-batch-size",
+                str(args.supervised_batch_size),
+            ]
+        )
+        if args.supervised_max_examples is not None:
+            convnext_command.extend(["--supervised-max-examples", str(args.supervised_max_examples)])
 
     commands = [
         ("resnet_policy_value", resnet_command),

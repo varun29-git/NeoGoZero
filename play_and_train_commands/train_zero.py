@@ -33,6 +33,10 @@ def main() -> None:
     parser.add_argument("--checkpoint-dir", type=Path, default=Path("checkpoints"))
     parser.add_argument("--resume-checkpoint", type=Path, default=None)
     parser.add_argument("--metrics-path", type=Path, default=None)
+    parser.add_argument("--supervised-sgf-dir", type=Path, default=None)
+    parser.add_argument("--supervised-steps", type=int, default=0)
+    parser.add_argument("--supervised-max-examples", type=int, default=None)
+    parser.add_argument("--supervised-batch-size", type=int, default=None)
     parser.add_argument("--seed", type=int, default=1)
     parser.add_argument("--device", type=str, default="cpu")
     parser.add_argument("--weights-export-dir", type=Path, default=Path("trained_model_weights"))
@@ -62,6 +66,10 @@ def main() -> None:
         checkpoint_dir=args.checkpoint_dir,
         resume_checkpoint=args.resume_checkpoint,
         metrics_path=args.metrics_path,
+        supervised_sgf_dir=args.supervised_sgf_dir,
+        supervised_steps=args.supervised_steps,
+        supervised_max_examples=args.supervised_max_examples,
+        supervised_batch_size=args.supervised_batch_size,
         seed=args.seed,
         device=args.device,
     )

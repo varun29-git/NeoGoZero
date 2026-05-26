@@ -13,6 +13,10 @@ from match_evaluation.match import play_game
 from go_engine.types import Player
 from policy_value_networks.resnet_policy_value.policy_value import PolicyValueNet, TorchPolicyValueEvaluator
 from zero_training_pipeline.self_play import TrainingExample, generate_self_play_game
+from zero_training_pipeline.supervised_pretraining import (
+    load_sgf_training_examples,
+    run_supervised_pretraining,
+)
 from zero_training_pipeline.torch_training import train_step
 
 
@@ -39,6 +43,10 @@ class ZeroTrainingConfig:
     checkpoint_dir: Path = Path("checkpoints")
     resume_checkpoint: Path | None = None
     metrics_path: Path | None = None
+    supervised_sgf_dir: Path | None = None
+    supervised_steps: int = 0
+    supervised_max_examples: int | None = None
+    supervised_batch_size: int | None = None
     seed: int = 1
     device: str = "cpu"
 
@@ -79,6 +87,12 @@ class ZeroTrainingConfig:
             raise ValueError("dirichlet_alpha must be positive")
         if not 0 <= self.dirichlet_epsilon <= 1:
             raise ValueError("dirichlet_epsilon must be in [0, 1]")
+        if self.supervised_steps < 0:
+            raise ValueError("supervised_steps cannot be negative")
+        if self.supervised_max_examples is not None and self.supervised_max_examples < 1:
+            raise ValueError("supervised_max_examples must be at least 1")
+        if self.supervised_batch_size is not None and self.supervised_batch_size < 1:
+            raise ValueError("supervised_batch_size must be at least 1")
 
     def to_dict(self) -> dict[str, object]:
         data = asdict(self)
@@ -87,6 +101,9 @@ class ZeroTrainingConfig:
             str(self.resume_checkpoint) if self.resume_checkpoint is not None else None
         )
         data["metrics_path"] = str(self.metrics_path) if self.metrics_path is not None else None
+        data["supervised_sgf_dir"] = (
+            str(self.supervised_sgf_dir) if self.supervised_sgf_dir is not None else None
+        )
         return data
 
     @classmethod
@@ -103,6 +120,8 @@ class ZeroTrainingConfig:
             converted["resume_checkpoint"] = Path(str(converted["resume_checkpoint"]))
         if converted.get("metrics_path") is not None:
             converted["metrics_path"] = Path(str(converted["metrics_path"]))
+        if converted.get("supervised_sgf_dir") is not None:
+            converted["supervised_sgf_dir"] = Path(str(converted["supervised_sgf_dir"]))
         return cls(**converted)
 
 
@@ -160,6 +179,17 @@ def run_zero_training(config: ZeroTrainingConfig) -> TrainingRunResult:
         model = _new_model(config)
         optimizer = torch.optim.Adam(model.parameters(), lr=config.learning_rate)
         replay_buffer = ReplayBuffer(capacity=config.replay_buffer_size)
+        if _maybe_run_supervised_pretraining(config, model, optimizer, rng):
+            save_checkpoint(
+                checkpoint_dir=checkpoint_dir,
+                iteration=0,
+                model=model,
+                optimizer=optimizer,
+                config=config,
+                replay_buffer=replay_buffer,
+                promoted=True,
+                candidate_win_rate=1.0,
+            )
 
     iteration_results: list[TrainingIterationResult] = []
 
@@ -281,6 +311,44 @@ def _run_self_play(
         generated_examples += len(game.examples)
 
     return generated_examples
+
+
+def _maybe_run_supervised_pretraining(
+    config: ZeroTrainingConfig,
+    model: PolicyValueNet,
+    optimizer: torch.optim.Optimizer,
+    rng: random.Random,
+) -> bool:
+    if config.supervised_sgf_dir is None or config.supervised_steps == 0:
+        return False
+
+    examples = load_sgf_training_examples(
+        sgf_dir=config.supervised_sgf_dir,
+        board_size=config.board_size,
+        history_length=config.history_length,
+        max_examples=config.supervised_max_examples,
+    )
+    batch_size = config.supervised_batch_size or config.batch_size
+    losses = run_supervised_pretraining(
+        model=model,
+        optimizer=optimizer,
+        examples=examples,
+        board_size=config.board_size,
+        history_length=config.history_length,
+        steps=config.supervised_steps,
+        batch_size=batch_size,
+        device=config.device,
+        rng=rng,
+    )
+    mean_loss = sum(losses) / len(losses)
+    print(
+        "Supervised pretraining complete: "
+        f"examples={len(examples)}, "
+        f"steps={config.supervised_steps}, "
+        f"loss={mean_loss:.4f}",
+        flush=True,
+    )
+    return True
 
 
 def _train_from_replay(
