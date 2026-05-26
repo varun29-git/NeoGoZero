@@ -87,9 +87,17 @@ python3 play_and_train_commands/train_zero.py \
 ```
 
 The default command is intentionally tiny so it can run as a smoke test on a laptop.
+When training completes, the command exports final weights and a zipped download
+bundle under `trained_model_weights/resnet_policy_value/`.
 
 ConvNeXt variant:
 
 ```bash
 python3 policy_value_networks/convnext_policy_value/train_convnext_zero.py
 ```
+
+When ConvNeXt training completes, the command exports final weights and a zipped
+download bundle under `trained_model_weights/convnext_policy_value/`.
+
+In Colab, add `--auto-download-weights` to trigger a browser download after the
+bundle is created.

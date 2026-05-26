@@ -7,6 +7,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from zero_training_pipeline.zero_loop import ZeroTrainingConfig, run_zero_training
+from zero_training_pipeline.weight_exports import export_checkpoint_weights
 
 
 def main() -> None:
@@ -34,6 +35,9 @@ def main() -> None:
     parser.add_argument("--metrics-path", type=Path, default=None)
     parser.add_argument("--seed", type=int, default=1)
     parser.add_argument("--device", type=str, default="cpu")
+    parser.add_argument("--weights-export-dir", type=Path, default=Path("trained_model_weights"))
+    parser.add_argument("--skip-weights-export", action="store_true")
+    parser.add_argument("--auto-download-weights", action="store_true")
     args = parser.parse_args()
 
     config = ZeroTrainingConfig(
@@ -73,6 +77,17 @@ def main() -> None:
             f"promoted={iteration.promoted}"
         )
     print(f"Final checkpoint: {result.final_checkpoint_path}")
+    if not args.skip_weights_export:
+        export = export_checkpoint_weights(
+            checkpoint_path=result.final_checkpoint_path,
+            architecture="resnet_policy_value",
+            output_dir=args.weights_export_dir,
+            auto_download=args.auto_download_weights,
+        )
+        print(f"Final weights: {export.weights_path}")
+        print(f"Download bundle: {export.bundle_path}")
+        if args.auto_download_weights and not export.auto_download_started:
+            print("Auto-download is only available in Colab; bundle was still created.")
 
 
 if __name__ == "__main__":

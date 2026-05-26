@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import random
+import zipfile
 
 import pytest
 
@@ -14,6 +15,7 @@ from zero_training_pipeline.zero_loop import (
     load_checkpoint,
     run_zero_training,
 )
+from zero_training_pipeline.weight_exports import export_checkpoint_weights
 
 
 def test_replay_buffer_keeps_capacity_and_samples() -> None:
@@ -62,6 +64,38 @@ def test_zero_training_writes_loadable_checkpoint(tmp_path) -> None:
     assert len(replay_buffer) > 0
     assert optimizer.state_dict()
     assert model.policy_size == 10
+
+
+def test_zero_training_exports_downloadable_weights_bundle(tmp_path) -> None:
+    config = ZeroTrainingConfig(
+        board_size=3,
+        iterations=1,
+        self_play_games_per_iteration=1,
+        mcts_rounds=1,
+        max_rollout_moves=6,
+        training_steps_per_iteration=1,
+        batch_size=4,
+        channels=8,
+        num_res_blocks=1,
+        checkpoint_dir=tmp_path / "checkpoints",
+        seed=7,
+    )
+
+    result = run_zero_training(config)
+    export = export_checkpoint_weights(
+        checkpoint_path=result.final_checkpoint_path,
+        architecture="resnet_policy_value",
+        output_dir=tmp_path / "exports",
+    )
+
+    assert export.weights_path.exists()
+    assert export.manifest_path.exists()
+    assert export.bundle_path.exists()
+    with zipfile.ZipFile(export.bundle_path) as bundle:
+        names = set(bundle.namelist())
+
+    assert export.weights_path.name in names
+    assert export.manifest_path.name in names
 
 
 def test_zero_training_writes_metrics_and_can_resume(tmp_path) -> None:

@@ -35,6 +35,10 @@ board grid intact.
 python3 policy_value_networks/convnext_policy_value/train_convnext_zero.py
 ```
 
+The command exports final weights and a zipped download bundle under
+`trained_model_weights/convnext_policy_value/` when training finishes. In Colab,
+add `--auto-download-weights` to trigger a browser download.
+
 ## Larger 9x9 Shape
 
 ```bash

@@ -149,6 +149,7 @@
 - Added checkpoint resume support through `--resume-checkpoint`.
 - Added JSONL metrics writing for each training iteration.
 - Added `--device` to ResNet and ConvNeXt training commands so 9x9 runs can target CUDA/MPS-capable accelerators.
+- Added automatic final weight exports and zipped download bundles for both ResNet and ConvNeXt training commands.
 - Added tests for temperature selection, Dirichlet noise, history planes, self-play history capture, metrics writing, and checkpoint resume.
 
 ### Next Direction
