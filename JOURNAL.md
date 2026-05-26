@@ -154,3 +154,16 @@
 - Improve MCTS speed so larger 5x5 and 9x9 experiments are practical.
 - Add batched neural inference for MCTS leaf evaluations.
 - Add stronger training/evaluation dashboards.
+
+### Milestone 10: ConvNeXt Variant
+
+- Researched ConvNeXt's block structure and added a separate implementation in `convnext_impl/`.
+- Added a ConvNeXt-style policy-value model with:
+  - Depthwise 7x7 convolution
+  - Channel LayerNorm
+  - 4x inverted bottleneck
+  - GELU
+  - Layer scale
+  - Optional stochastic depth
+- Kept Go board spatial resolution intact so policy logits still map to board points plus pass.
+- Added a ConvNeXt-specific training loop, checkpoint format, CLI, README, and tests.
