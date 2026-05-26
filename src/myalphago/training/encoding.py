@@ -7,43 +7,59 @@ BoardPlanes = tuple[tuple[tuple[int, ...], ...], ...]
 PolicyVector = tuple[float, ...]
 
 
-def encode_game_state(game_state: GameState) -> BoardPlanes:
-    size = game_state.board.size
-    current_player = game_state.next_player
-    opponent = current_player.other
+BoardSnapshot = tuple[tuple[int, int, str], ...]
 
-    current_stones = _stone_plane(game_state, current_player)
-    opponent_stones = _stone_plane(game_state, opponent)
-    next_player_plane = _filled_plane(size, 1 if current_player is Player.BLACK else 0)
 
-    return (current_stones, opponent_stones, next_player_plane)
+def encode_game_state(game_state: GameState, history_length: int = 1) -> BoardPlanes:
+    history = []
+    state: GameState | None = game_state
+    while state is not None and len(history) < history_length:
+        history.append(state.board.zobrist_key())
+        state = state.previous_state
+
+    return encode_board_history(
+        board_history=tuple(history),
+        player=game_state.next_player,
+        board_size=game_state.board.size,
+        history_length=history_length,
+    )
 
 
 def encode_board_snapshot(
-    board: tuple[tuple[int, int, str], ...],
+    board: BoardSnapshot,
     player: Player,
     board_size: int,
+    history_length: int = 1,
+    board_history: tuple[BoardSnapshot, ...] | None = None,
 ) -> BoardPlanes:
-    stones = {(row, col): color for row, col, color in board}
+    history = board_history if board_history is not None else (board,)
+    return encode_board_history(
+        board_history=history,
+        player=player,
+        board_size=board_size,
+        history_length=history_length,
+    )
+
+
+def encode_board_history(
+    board_history: tuple[BoardSnapshot, ...],
+    player: Player,
+    board_size: int,
+    history_length: int = 1,
+) -> BoardPlanes:
+    if history_length < 1:
+        raise ValueError("history_length must be at least 1")
+
+    planes = []
     opponent = player.other
+    for index in range(history_length):
+        board = board_history[index] if index < len(board_history) else ()
+        stones = {(row, col): color for row, col, color in board}
+        planes.append(_snapshot_plane(stones, player, board_size))
+        planes.append(_snapshot_plane(stones, opponent, board_size))
 
-    current_stones = tuple(
-        tuple(
-            1 if stones.get((row, col)) == player.value else 0
-            for col in range(1, board_size + 1)
-        )
-        for row in range(1, board_size + 1)
-    )
-    opponent_stones = tuple(
-        tuple(
-            1 if stones.get((row, col)) == opponent.value else 0
-            for col in range(1, board_size + 1)
-        )
-        for row in range(1, board_size + 1)
-    )
-    next_player_plane = _filled_plane(board_size, 1 if player is Player.BLACK else 0)
-
-    return (current_stones, opponent_stones, next_player_plane)
+    planes.append(_filled_plane(board_size, 1 if player is Player.BLACK else 0))
+    return tuple(planes)
 
 
 def encode_policy(
@@ -85,6 +101,20 @@ def _stone_plane(game_state: GameState, player: Player) -> tuple[tuple[int, ...]
             for col in range(1, size + 1)
         )
         for row in range(1, size + 1)
+    )
+
+
+def _snapshot_plane(
+    stones: dict[tuple[int, int], str],
+    player: Player,
+    board_size: int,
+) -> tuple[tuple[int, ...], ...]:
+    return tuple(
+        tuple(
+            1 if stones.get((row, col)) == player.value else 0
+            for col in range(1, board_size + 1)
+        )
+        for row in range(1, board_size + 1)
     )
 
 
