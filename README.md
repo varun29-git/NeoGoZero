@@ -79,6 +79,8 @@ python3 play_and_train_commands/train_zero.py \
   --history-length 8 \
   --channels 256 \
   --res-blocks 20 \
+  --supervised-sgf-dir supervised_go_data/sgf_9x9 \
+  --supervised-steps 1000 \
   --mcts-rounds 300 \
   --self-play-games 25 \
   --training-steps 1000 \
@@ -109,6 +111,8 @@ nohup python3 play_and_train_commands/train_both_models_9x9_t4.py \
   > train_both_models_9x9_t4.out 2>&1 &
 ```
 
-This runs ResNet first, then ConvNeXt, and writes checkpoints, metrics, logs, and
-download bundles under `training_runs/t4_9x9/`. It prints ETA lines after each
-training iteration and during long quiet stretches.
+Put 9x9 SGF files in `supervised_go_data/sgf_9x9/` before starting. This runs
+supervised pretraining first, then self-play fine-tuning, for ResNet and
+ConvNeXt. It writes checkpoints, metrics, logs, and download bundles under
+`training_runs/t4_9x9/`. It prints ETA lines after each training iteration and
+during long quiet stretches.
