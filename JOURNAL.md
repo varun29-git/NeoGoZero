@@ -149,6 +149,7 @@
 - Added checkpoint resume support through `--resume-checkpoint`.
 - Added JSONL metrics writing for each training iteration.
 - Added `--device` to ResNet and ConvNeXt training commands so 9x9 runs can target CUDA/MPS-capable accelerators.
+- Added optional supervised SGF pretraining before self-play fine-tuning for both ResNet and ConvNeXt.
 - Added automatic final weight exports and zipped download bundles for both ResNet and ConvNeXt training commands.
 - Added `play_and_train_commands/train_both_models_9x9_t4.py` so a single T4 VM can train ResNet and ConvNeXt sequentially without supervision.
 - Added ETA reporting to the unattended T4 launcher.
