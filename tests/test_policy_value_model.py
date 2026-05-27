@@ -67,3 +67,16 @@ def test_torch_evaluator_returns_legal_priors() -> None:
     assert set(evaluation.move_priors) == set(game.legal_moves())
     assert sum(evaluation.move_priors.values()) == pytest.approx(1.0)
     assert -1.0 <= evaluation.value <= 1.0
+
+
+def test_torch_evaluator_batches_multiple_states() -> None:
+    game_a = GameState.new_game(board_size=3)
+    game_b = game_a.apply_move(next(move for move in game_a.legal_moves() if not move.is_pass))
+    model = PolicyValueNet(board_size=3, input_planes=3, channels=8, num_res_blocks=2)
+    evaluator = TorchPolicyValueEvaluator(model)
+
+    evaluations = evaluator.evaluate_many((game_a, game_b))
+
+    assert len(evaluations) == 2
+    assert set(evaluations[0].move_priors) == set(game_a.legal_moves())
+    assert set(evaluations[1].move_priors) == set(game_b.legal_moves())

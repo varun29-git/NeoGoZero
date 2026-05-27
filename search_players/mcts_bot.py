@@ -3,6 +3,7 @@ from __future__ import annotations
 import math
 import random
 from dataclasses import dataclass, field
+from collections.abc import Sequence
 from typing import Protocol
 
 from go_engine.game import GameState, Move
@@ -54,6 +55,11 @@ class Evaluation:
 class Evaluator(Protocol):
     def evaluate(self, game_state: GameState) -> Evaluation:
         """Return move priors and value from the next player's perspective."""
+
+
+class BatchEvaluator(Evaluator, Protocol):
+    def evaluate_many(self, game_states: Sequence[GameState]) -> tuple[Evaluation, ...]:
+        """Return evaluations for multiple game states in one model call."""
 
 
 @dataclass
@@ -112,6 +118,7 @@ class MCTSNode:
     prior_probability: float = 1.0
     value_sum: float = 0.0
     num_rollouts: int = 0
+    virtual_visits: int = 0
     children: list[MCTSNode] = field(default_factory=list)
 
     def is_expanded(self) -> bool:
@@ -143,15 +150,16 @@ class MCTSNode:
         if not self.children:
             raise ValueError("cannot select a child from a leaf node")
 
-        parent_visits = math.sqrt(max(self.num_rollouts, 1))
+        parent_visits = math.sqrt(max(self.num_rollouts + self.virtual_visits, 1))
 
         def puct_score(child: MCTSNode) -> float:
             value_score = -child.q_value()
+            child_visits = child.num_rollouts + child.virtual_visits
             prior_score = (
                 c_puct
                 * child.prior_probability
                 * parent_visits
-                / (1 + child.num_rollouts)
+                / (1 + child_visits)
             )
             return value_score + prior_score
 
@@ -189,6 +197,7 @@ class MCTSBot:
     c_puct: float = 1.5
     max_rollout_moves: int | None = None
     evaluator: Evaluator | None = None
+    inference_batch_size: int = 1
     dirichlet_alpha: float = 0.03
     dirichlet_epsilon: float = 0.25
     rng: random.Random = field(default_factory=random.Random)
@@ -200,6 +209,8 @@ class MCTSBot:
             raise ValueError("c_puct cannot be negative")
         if self.max_rollout_moves is not None and self.max_rollout_moves < 1:
             raise ValueError("max_rollout_moves must be at least 1")
+        if self.inference_batch_size < 1:
+            raise ValueError("inference_batch_size must be at least 1")
         if self.dirichlet_alpha <= 0:
             raise ValueError("dirichlet_alpha must be positive")
         if not 0 <= self.dirichlet_epsilon <= 1:
@@ -233,34 +244,50 @@ class MCTSBot:
 
         root = MCTSNode(game_state)
         added_root_noise = False
+        remaining_rounds = self.num_rounds
 
-        for _ in range(self.num_rounds):
-            node = root
-
-            while node.is_expanded() and not node.game_state.is_over():
-                node = node.select_child(self.c_puct)
-
+        if not root.is_expanded():
             assert self.evaluator is not None
-            evaluation = self.evaluator.evaluate(node.game_state)
-            node.expand(evaluation.move_priors)
-            if (
-                add_dirichlet_noise
-                and node is root
-                and not added_root_noise
-                and root.children
-            ):
+            evaluation = self.evaluator.evaluate(root.game_state)
+            root.expand(evaluation.move_priors)
+            if add_dirichlet_noise and root.children:
                 root.add_dirichlet_noise(
                     alpha=self.dirichlet_alpha,
                     epsilon=self.dirichlet_epsilon,
                     rng=self.rng,
                 )
                 added_root_noise = True
+            _backup_value(root, evaluation.value)
+            remaining_rounds -= 1
 
-            value = evaluation.value
-            while node is not None:
-                node.record_visit(value)
-                value = -value
-                node = node.parent
+        while remaining_rounds > 0:
+            batch_size = min(self.inference_batch_size, remaining_rounds)
+            leaves_and_paths = [
+                _select_leaf_with_virtual_visits(root, self.c_puct)
+                for _ in range(batch_size)
+            ]
+            leaves = [leaf for leaf, _ in leaves_and_paths]
+            assert self.evaluator is not None
+            evaluations = _evaluate_many(self.evaluator, [leaf.game_state for leaf in leaves])
+
+            for (leaf, path), evaluation in zip(leaves_and_paths, evaluations):
+                _release_virtual_visits(path)
+                leaf.expand(evaluation.move_priors)
+                if (
+                    add_dirichlet_noise
+                    and leaf is root
+                    and not added_root_noise
+                    and root.children
+                ):
+                    root.add_dirichlet_noise(
+                        alpha=self.dirichlet_alpha,
+                        epsilon=self.dirichlet_epsilon,
+                        rng=self.rng,
+                    )
+                    added_root_noise = True
+                _backup_value(leaf, evaluation.value)
+
+            remaining_rounds -= batch_size
 
         best_child = root.most_visited_child()
         assert best_child.move is not None
@@ -278,6 +305,44 @@ class MCTSBot:
             selected_move=selected_move,
             visit_counts=visit_counts,
         )
+
+
+def _select_leaf_with_virtual_visits(
+    root: MCTSNode,
+    c_puct: float,
+) -> tuple[MCTSNode, tuple[MCTSNode, ...]]:
+    node = root
+    path = [node]
+
+    while node.is_expanded() and not node.game_state.is_over():
+        node = node.select_child(c_puct)
+        path.append(node)
+
+    for path_node in path:
+        path_node.virtual_visits += 1
+    return node, tuple(path)
+
+
+def _release_virtual_visits(path: tuple[MCTSNode, ...]) -> None:
+    for node in path:
+        node.virtual_visits = max(node.virtual_visits - 1, 0)
+
+
+def _backup_value(node: MCTSNode, value: float) -> None:
+    while node is not None:
+        node.record_visit(value)
+        value = -value
+        node = node.parent
+
+
+def _evaluate_many(
+    evaluator: Evaluator,
+    game_states: Sequence[GameState],
+) -> tuple[Evaluation, ...]:
+    evaluate_many = getattr(evaluator, "evaluate_many", None)
+    if callable(evaluate_many):
+        return tuple(evaluate_many(game_states))
+    return tuple(evaluator.evaluate(game_state) for game_state in game_states)
 
 
 def _select_move_from_visit_counts(

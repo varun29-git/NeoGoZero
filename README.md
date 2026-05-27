@@ -82,6 +82,7 @@ python3 play_and_train_commands/train_zero.py \
   --supervised-sgf-dir supervised_go_data/sgf_9x9 \
   --supervised-steps 1000 \
   --mcts-rounds 300 \
+  --mcts-inference-batch-size 64 \
   --self-play-games 25 \
   --training-steps 1000 \
   --evaluation-games 20 \
@@ -115,4 +116,6 @@ Put 9x9 SGF files in `supervised_go_data/sgf_9x9/` before starting. This runs
 supervised pretraining first, then self-play fine-tuning, for ResNet and
 ConvNeXt. It writes checkpoints, metrics, logs, and download bundles under
 `training_runs/t4_9x9/`. It prints ETA lines after each training iteration and
-during long quiet stretches.
+during long quiet stretches. MCTS uses batched neural leaf evaluation by default
+in this launcher so the T4 is fed larger inference batches instead of one leaf
+at a time.

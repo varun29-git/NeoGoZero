@@ -16,6 +16,7 @@ def main() -> None:
     parser.add_argument("--iterations", type=int, default=1)
     parser.add_argument("--self-play-games", type=int, default=1)
     parser.add_argument("--mcts-rounds", type=int, default=2)
+    parser.add_argument("--mcts-inference-batch-size", type=int, default=1)
     parser.add_argument("--max-rollout-moves", type=int, default=12)
     parser.add_argument("--training-steps", type=int, default=2)
     parser.add_argument("--batch-size", type=int, default=8)
@@ -49,6 +50,7 @@ def main() -> None:
         iterations=args.iterations,
         self_play_games_per_iteration=args.self_play_games,
         mcts_rounds=args.mcts_rounds,
+        mcts_inference_batch_size=args.mcts_inference_batch_size,
         max_rollout_moves=args.max_rollout_moves,
         training_steps_per_iteration=args.training_steps,
         batch_size=args.batch_size,

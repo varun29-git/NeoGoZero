@@ -50,6 +50,7 @@ python3 policy_value_networks/convnext_policy_value/train_convnext_zero.py \
   --supervised-sgf-dir supervised_go_data/sgf_9x9 \
   --supervised-steps 1000 \
   --mcts-rounds 300 \
+  --mcts-inference-batch-size 64 \
   --self-play-games 25 \
   --training-steps 1000 \
   --evaluation-games 20 \

@@ -26,6 +26,7 @@ class ZeroTrainingConfig:
     iterations: int = 1
     self_play_games_per_iteration: int = 1
     mcts_rounds: int = 2
+    mcts_inference_batch_size: int = 1
     max_rollout_moves: int | None = 12
     training_steps_per_iteration: int = 2
     batch_size: int = 8
@@ -59,6 +60,8 @@ class ZeroTrainingConfig:
             raise ValueError("self_play_games_per_iteration must be at least 1")
         if self.mcts_rounds < 1:
             raise ValueError("mcts_rounds must be at least 1")
+        if self.mcts_inference_batch_size < 1:
+            raise ValueError("mcts_inference_batch_size must be at least 1")
         if self.max_rollout_moves is not None and self.max_rollout_moves < 1:
             raise ValueError("max_rollout_moves must be at least 1")
         if self.training_steps_per_iteration < 1:
@@ -292,6 +295,7 @@ def _run_self_play(
     for _ in range(config.self_play_games_per_iteration):
         bot = MCTSBot(
             num_rounds=config.mcts_rounds,
+            inference_batch_size=config.mcts_inference_batch_size,
             max_rollout_moves=config.max_rollout_moves,
             evaluator=evaluator,
             dirichlet_alpha=config.dirichlet_alpha,
@@ -391,11 +395,13 @@ def _evaluate_candidate(
     for game_index in range(config.evaluation_games):
         candidate_black = MCTSBot(
             num_rounds=config.mcts_rounds,
+            inference_batch_size=config.mcts_inference_batch_size,
             evaluator=candidate_evaluator,
             rng=random.Random(rng.randrange(1_000_000_000)),
         )
         champion_white = MCTSBot(
             num_rounds=config.mcts_rounds,
+            inference_batch_size=config.mcts_inference_batch_size,
             evaluator=champion_evaluator,
             rng=random.Random(rng.randrange(1_000_000_000)),
         )
@@ -410,11 +416,13 @@ def _evaluate_candidate(
 
         champion_black = MCTSBot(
             num_rounds=config.mcts_rounds,
+            inference_batch_size=config.mcts_inference_batch_size,
             evaluator=champion_evaluator,
             rng=random.Random(rng.randrange(1_000_000_000)),
         )
         candidate_white = MCTSBot(
             num_rounds=config.mcts_rounds,
+            inference_batch_size=config.mcts_inference_batch_size,
             evaluator=candidate_evaluator,
             rng=random.Random(rng.randrange(1_000_000_000)),
         )

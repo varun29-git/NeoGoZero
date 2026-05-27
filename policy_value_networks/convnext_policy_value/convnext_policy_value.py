@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from collections.abc import Sequence
 
 import torch
 from torch import nn
@@ -153,24 +154,38 @@ class ConvNeXtPolicyValueEvaluator:
     device: torch.device | str = "cpu"
 
     def evaluate(self, game_state: GameState) -> Evaluation:
+        return self.evaluate_many((game_state,))[0]
+
+    def evaluate_many(self, game_states: Sequence[GameState]) -> tuple[Evaluation, ...]:
+        if not game_states:
+            return ()
+
         self.model.eval()
         history_length = (self.model.input_planes - 1) // 2
         board_planes = torch.tensor(
-            encode_game_state(game_state, history_length=history_length),
+            [
+                encode_game_state(game_state, history_length=history_length)
+                for game_state in game_states
+            ],
             dtype=torch.float32,
             device=self.device,
-        ).unsqueeze(0)
+        )
 
         with torch.no_grad():
             policy_logits, values = self.model(board_planes)
-            probabilities = torch.softmax(policy_logits, dim=1)[0]
+            probabilities = torch.softmax(policy_logits, dim=1)
 
-        move_priors = {
-            move: float(probabilities[move_to_index(move, game_state.board.size)].item())
-            for move in game_state.legal_moves()
-        }
-        return Evaluation.from_priors(
-            game_state,
-            move_priors=move_priors,
-            value=float(values[0].item()),
-        )
+        evaluations = []
+        for index, game_state in enumerate(game_states):
+            move_priors = {
+                move: float(probabilities[index, move_to_index(move, game_state.board.size)].item())
+                for move in game_state.legal_moves()
+            }
+            evaluations.append(
+                Evaluation.from_priors(
+                    game_state,
+                    move_priors=move_priors,
+                    value=float(values[index].item()),
+                )
+            )
+        return tuple(evaluations)

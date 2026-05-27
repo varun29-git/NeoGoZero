@@ -115,6 +115,33 @@ def test_mcts_can_use_a_custom_evaluator_prior() -> None:
     assert bot.select_move(game) == Move.play(Point(2, 2))
 
 
+def test_mcts_uses_batched_evaluator_when_configured() -> None:
+    class CountingBatchEvaluator:
+        def __init__(self) -> None:
+            self.batch_sizes: list[int] = []
+
+        def evaluate(self, game_state: GameState) -> Evaluation:
+            return self.evaluate_many((game_state,))[0]
+
+        def evaluate_many(self, game_states: tuple[GameState, ...]) -> tuple[Evaluation, ...]:
+            self.batch_sizes.append(len(game_states))
+            return tuple(Evaluation.uniform(game_state, value=0.0) for game_state in game_states)
+
+    evaluator = CountingBatchEvaluator()
+    game = GameState.new_game(board_size=3)
+    bot = MCTSBot(
+        num_rounds=9,
+        evaluator=evaluator,
+        inference_batch_size=4,
+        rng=random.Random(1),
+    )
+
+    move = bot.select_move(game)
+
+    assert game.is_valid_move(move)
+    assert max(evaluator.batch_sizes) > 1
+
+
 def test_temperature_zero_selects_most_visited_move() -> None:
     move_a = Move.play(Point(1, 1))
     move_b = Move.play(Point(1, 2))
