@@ -23,7 +23,7 @@ def export_checkpoint_weights(
     output_dir: Path = Path("trained_model_weights"),
     auto_download: bool = False,
 ) -> WeightExportResult:
-    checkpoint = torch.load(checkpoint_path, map_location="cpu")
+    checkpoint = torch.load(checkpoint_path, map_location="cpu", weights_only=False)
     iteration = int(checkpoint["iteration"])
     output_dir = Path(output_dir)
     architecture_dir = output_dir / architecture

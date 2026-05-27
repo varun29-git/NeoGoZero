@@ -318,7 +318,7 @@ def save_checkpoint(
 def load_checkpoint(
     checkpoint_path: Path,
 ) -> tuple[PolicyValueNet, torch.optim.Optimizer, ZeroTrainingConfig, ReplayBuffer, int]:
-    checkpoint = torch.load(checkpoint_path, map_location="cpu")
+    checkpoint = torch.load(checkpoint_path, map_location="cpu", weights_only=False)
     config = ZeroTrainingConfig.from_dict(checkpoint["config"])
     model = _new_model(config)
     model.load_state_dict(checkpoint["model_state"])
