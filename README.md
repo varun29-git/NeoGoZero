@@ -115,7 +115,11 @@ nohup python3 play_and_train_commands/train_both_models_9x9_t4.py \
 Put 9x9 SGF files in `supervised_go_data/sgf_9x9/` before starting. This runs
 supervised pretraining first, then self-play fine-tuning, for ResNet and
 ConvNeXt. It writes checkpoints, metrics, logs, and download bundles under
-`training_runs/t4_9x9/`. It prints ETA lines after each training iteration and
-during long quiet stretches. MCTS uses batched neural leaf evaluation by default
-in this launcher so the T4 is fed larger inference batches instead of one leaf
-at a time.
+`training_runs/t4_9x9/`. The default target is 24 hours for both models on one
+T4: ResNet first, then ConvNeXt. Supervised SGF pretraining is kept to about 20%
+of gradient steps; the rest is self-play fine-tuning. The run also writes
+`run_manifest.json`, metrics JSONL files, logs, and per-game self-play JSONL
+records for later analysis. It prints ETA lines after each training iteration
+and during long quiet stretches. MCTS uses batched neural leaf evaluation by
+default in this launcher so the T4 is fed larger inference batches instead of
+one leaf at a time.

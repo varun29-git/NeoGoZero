@@ -46,6 +46,7 @@ def main() -> None:
     )
     parser.add_argument("--resume-checkpoint", type=Path, default=None)
     parser.add_argument("--metrics-path", type=Path, default=None)
+    parser.add_argument("--self-play-records-path", type=Path, default=None)
     parser.add_argument("--supervised-sgf-dir", type=Path, default=None)
     parser.add_argument("--supervised-steps", type=int, default=0)
     parser.add_argument("--supervised-max-examples", type=int, default=None)
@@ -84,6 +85,7 @@ def main() -> None:
         checkpoint_dir=args.checkpoint_dir,
         resume_checkpoint=args.resume_checkpoint,
         metrics_path=args.metrics_path,
+        self_play_records_path=args.self_play_records_path,
         supervised_sgf_dir=args.supervised_sgf_dir,
         supervised_steps=args.supervised_steps,
         supervised_max_examples=args.supervised_max_examples,

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import argparse
+import json
 import subprocess
 import sys
 import time
@@ -17,16 +18,18 @@ def main() -> None:
     )
     parser.add_argument("--output-dir", type=Path, default=Path("training_runs/t4_9x9"))
     parser.add_argument("--device", type=str, default="cuda")
-    parser.add_argument("--iterations", type=int, default=4)
-    parser.add_argument("--self-play-games", type=int, default=40)
+    parser.add_argument("--target-hours", type=float, default=24.0)
+    parser.add_argument("--supervised-budget-fraction", type=float, default=0.2)
+    parser.add_argument("--iterations", type=int, default=5)
+    parser.add_argument("--self-play-games", type=int, default=100)
     parser.add_argument("--mcts-rounds", type=int, default=300)
     parser.add_argument("--mcts-inference-batch-size", type=int, default=64)
-    parser.add_argument("--training-steps", type=int, default=500)
-    parser.add_argument("--evaluation-games", type=int, default=5)
+    parser.add_argument("--training-steps", type=int, default=800)
+    parser.add_argument("--evaluation-games", type=int, default=8)
     parser.add_argument("--channels", type=int, default=128)
     parser.add_argument("--blocks", type=int, default=10)
     parser.add_argument("--batch-size", type=int, default=128)
-    parser.add_argument("--replay-buffer-size", type=int, default=50_000)
+    parser.add_argument("--replay-buffer-size", type=int, default=250_000)
     parser.add_argument("--learning-rate", type=float, default=0.001)
     parser.add_argument("--supervised-sgf-dir", type=Path, default=Path("supervised_go_data/sgf_9x9"))
     parser.add_argument("--supervised-steps", type=int, default=1_000)
@@ -88,6 +91,8 @@ def main() -> None:
         str(run_dir / "checkpoints_resnet_policy_value"),
         "--metrics-path",
         str(run_dir / "metrics_resnet_policy_value.jsonl"),
+        "--self-play-records-path",
+        str(run_dir / "self_play_records_resnet_policy_value.jsonl"),
         "--weights-export-dir",
         str(weights_dir),
         "--device",
@@ -144,6 +149,8 @@ def main() -> None:
         str(run_dir / "checkpoints_convnext_policy_value"),
         "--metrics-path",
         str(run_dir / "metrics_convnext_policy_value.jsonl"),
+        "--self-play-records-path",
+        str(run_dir / "self_play_records_convnext_policy_value.jsonl"),
         "--weights-export-dir",
         str(weights_dir),
         "--device",
@@ -172,6 +179,12 @@ def main() -> None:
     print(f"Run directory: {run_dir}")
     for name, command in commands:
         print(f"{name}: {' '.join(command)}")
+    _write_run_manifest(
+        run_dir=run_dir,
+        args=args,
+        commands=commands,
+        weights_dir=weights_dir,
+    )
 
     if args.dry_run:
         return
@@ -192,6 +205,57 @@ def main() -> None:
         finished_durations.append(duration)
 
     print(f"Done. Weights and download bundles are in: {weights_dir}")
+
+
+def _write_run_manifest(
+    run_dir: Path,
+    args: argparse.Namespace,
+    commands: list[tuple[str, list[str]]],
+    weights_dir: Path,
+) -> None:
+    manifest_path = run_dir / "run_manifest.json"
+    manifest_path.parent.mkdir(parents=True, exist_ok=True)
+    total_self_play_games = args.iterations * args.self_play_games * len(commands)
+    self_play_training_steps = args.iterations * args.training_steps
+    supervised_fraction_of_gradient_steps = (
+        args.supervised_steps / (args.supervised_steps + self_play_training_steps)
+        if not args.skip_supervised_pretraining
+        else 0.0
+    )
+    manifest = {
+        "created_at": datetime.now().isoformat(timespec="seconds"),
+        "target_hours_total": args.target_hours,
+        "target_hours_per_model": args.target_hours / len(commands),
+        "supervised_budget_fraction_target": args.supervised_budget_fraction,
+        "supervised_fraction_of_gradient_steps": supervised_fraction_of_gradient_steps,
+        "notes": (
+            "One GPU run: ResNet first, ConvNeXt second. Supervised SGF "
+            "pretraining is a short warm-up; most budget is self-play data generation."
+        ),
+        "default_data_targets": {
+            "models": len(commands),
+            "iterations_per_model": args.iterations,
+            "self_play_games_per_iteration": args.self_play_games,
+            "total_self_play_games_across_models": total_self_play_games,
+            "mcts_rounds": args.mcts_rounds,
+            "mcts_inference_batch_size": args.mcts_inference_batch_size,
+            "replay_buffer_size": args.replay_buffer_size,
+        },
+        "artifacts": {
+            "weights_dir": str(weights_dir),
+            "resnet_metrics": str(run_dir / "metrics_resnet_policy_value.jsonl"),
+            "convnext_metrics": str(run_dir / "metrics_convnext_policy_value.jsonl"),
+            "resnet_self_play_records": str(run_dir / "self_play_records_resnet_policy_value.jsonl"),
+            "convnext_self_play_records": str(run_dir / "self_play_records_convnext_policy_value.jsonl"),
+            "logs_dir": str(run_dir / "logs"),
+        },
+        "commands": {name: command for name, command in commands},
+    }
+    manifest_path.write_text(
+        json.dumps(manifest, indent=2, sort_keys=True),
+        encoding="utf-8",
+    )
+    print(f"Run manifest: {manifest_path}")
 
 
 def _run_and_log(

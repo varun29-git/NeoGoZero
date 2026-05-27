@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import random
 import zipfile
+import json
 
 import pytest
 
@@ -135,3 +136,32 @@ def test_zero_training_writes_metrics_and_can_resume(tmp_path) -> None:
 
     assert resumed_result.iterations[0].iteration == 2
     assert len(lines) == 2
+
+
+def test_zero_training_writes_self_play_records(tmp_path) -> None:
+    records_path = tmp_path / "self_play_records.jsonl"
+    config = ZeroTrainingConfig(
+        board_size=3,
+        iterations=1,
+        self_play_games_per_iteration=2,
+        mcts_rounds=1,
+        max_rollout_moves=6,
+        training_steps_per_iteration=1,
+        batch_size=4,
+        channels=8,
+        num_res_blocks=1,
+        checkpoint_dir=tmp_path / "checkpoints",
+        self_play_records_path=records_path,
+        seed=8,
+    )
+
+    run_zero_training(config)
+    records = [
+        json.loads(line)
+        for line in records_path.read_text(encoding="utf-8").splitlines()
+    ]
+
+    assert len(records) == 2
+    assert records[0]["architecture"] == "resnet_policy_value"
+    assert records[0]["mcts_rounds"] == 1
+    assert records[0]["moves"]

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import random
 import zipfile
+import json
 
 import pytest
 
@@ -143,3 +144,33 @@ def test_convnext_training_exports_downloadable_weights_bundle(tmp_path) -> None
 
     assert export.weights_path.name in names
     assert export.manifest_path.name in names
+
+
+def test_convnext_training_writes_self_play_records(tmp_path) -> None:
+    records_path = tmp_path / "self_play_records.jsonl"
+    config = ConvNeXtTrainingConfig(
+        board_size=3,
+        iterations=1,
+        self_play_games_per_iteration=2,
+        mcts_rounds=1,
+        max_rollout_moves=6,
+        training_steps_per_iteration=1,
+        batch_size=4,
+        channels=8,
+        num_blocks=1,
+        evaluation_games=0,
+        checkpoint_dir=tmp_path / "checkpoints",
+        self_play_records_path=records_path,
+        seed=6,
+    )
+
+    run_convnext_training(config)
+    records = [
+        json.loads(line)
+        for line in records_path.read_text(encoding="utf-8").splitlines()
+    ]
+
+    assert len(records) == 2
+    assert records[0]["architecture"] == "convnext_policy_value"
+    assert records[0]["mcts_rounds"] == 1
+    assert records[0]["moves"]
