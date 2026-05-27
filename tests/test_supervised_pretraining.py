@@ -56,7 +56,7 @@ def test_run_supervised_pretraining_updates_model() -> None:
         history_length=1,
     )
     model = PolicyValueNet(board_size=3, input_planes=3, channels=8, num_res_blocks=1)
-    optimizer = torch.optim.Adam(model.parameters(), lr=0.01)
+    optimizer = torch.optim.AdamW(model.parameters(), lr=0.01)
 
     losses = run_supervised_pretraining(
         model=model,

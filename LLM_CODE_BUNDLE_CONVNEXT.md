@@ -1727,6 +1727,12 @@ from go_engine.game import GameState
 from zero_training_pipeline.encoding import encode_game_state, move_to_index
 
 
+def history_length_from_input_planes(input_planes: int) -> int:
+    if input_planes < 1 or input_planes % 2 == 0:
+        raise ValueError("input_planes must be a positive odd number")
+    return (input_planes - 1) // 2
+
+
 class ResidualBlock(nn.Module):
     def __init__(self, channels: int) -> None:
         super().__init__()
@@ -1757,8 +1763,7 @@ class PolicyValueNet(nn.Module):
         super().__init__()
         if num_res_blocks < 1:
             raise ValueError("num_res_blocks must be at least 1")
-        if input_planes < 1 or input_planes % 2 == 0:
-            raise ValueError("input_planes must be a positive odd number")
+        history_length_from_input_planes(input_planes)
 
         self.board_size = board_size
         self.policy_size = board_size * board_size + 1
@@ -1813,7 +1818,7 @@ class TorchPolicyValueEvaluator:
             return ()
 
         self.model.eval()
-        history_length = (self.model.input_planes - 1) // 2
+        history_length = history_length_from_input_planes(self.model.input_planes)
         board_planes = torch.tensor(
             [
                 encode_game_state(game_state, history_length=history_length)
@@ -2042,7 +2047,7 @@ def run_zero_training(config: ZeroTrainingConfig) -> TrainingRunResult:
         replay_buffer.capacity = config.replay_buffer_size
     else:
         model = _new_model(config)
-        optimizer = torch.optim.Adam(model.parameters(), lr=config.learning_rate)
+        optimizer = torch.optim.AdamW(model.parameters(), lr=config.learning_rate)
         replay_buffer = ReplayBuffer(capacity=config.replay_buffer_size)
         if _maybe_run_supervised_pretraining(config, model, optimizer, rng):
             save_checkpoint(
@@ -2170,7 +2175,7 @@ def load_checkpoint(
     config = ZeroTrainingConfig.from_dict(checkpoint["config"])
     model = _new_model(config)
     model.load_state_dict(checkpoint["model_state"])
-    optimizer = torch.optim.Adam(model.parameters(), lr=config.learning_rate)
+    optimizer = torch.optim.AdamW(model.parameters(), lr=config.learning_rate)
     optimizer.load_state_dict(checkpoint["optimizer_state"])
     replay_buffer = ReplayBuffer(
         capacity=config.replay_buffer_size,
@@ -2408,9 +2413,10 @@ def _evaluate_candidate(
 
 
 def _new_model(config: ZeroTrainingConfig) -> PolicyValueNet:
+    input_planes = 2 * config.history_length + 1
     return PolicyValueNet(
         board_size=config.board_size,
-        input_planes=2 * config.history_length + 1,
+        input_planes=input_planes,
         channels=config.channels,
         num_res_blocks=config.num_res_blocks,
     ).to(config.device)
@@ -2504,11 +2510,18 @@ from dataclasses import dataclass
 from collections.abc import Sequence
 
 import torch
+import torch.nn.functional as F
 from torch import nn
 
 from search_players.mcts_bot import Evaluation
 from go_engine.game import GameState
 from zero_training_pipeline.encoding import encode_game_state, move_to_index
+
+
+def history_length_from_input_planes(input_planes: int) -> int:
+    if input_planes < 1 or input_planes % 2 == 0:
+        raise ValueError("input_planes must be a positive odd number")
+    return (input_planes - 1) // 2
 
 
 class LayerNorm2d(nn.Module):
@@ -2530,13 +2543,11 @@ class StochasticDepth(nn.Module):
         self.drop_prob = drop_prob
 
     def forward(self, inputs: torch.Tensor) -> torch.Tensor:
-        if not self.training or self.drop_prob == 0:
-            return inputs
-
-        keep_prob = 1 - self.drop_prob
-        shape = (inputs.shape[0],) + (1,) * (inputs.ndim - 1)
-        mask = inputs.new_empty(shape).bernoulli_(keep_prob)
-        return inputs * mask / keep_prob
+        return F.dropout(
+            inputs,
+            p=self.drop_prob,
+            training=self.training,
+        )
 
 
 class ConvNeXtBlock(nn.Module):
@@ -2594,8 +2605,7 @@ class ConvNeXtPolicyValueNet(nn.Module):
         stochastic_depth_prob: float = 0.1,
     ) -> None:
         super().__init__()
-        if input_planes < 1 or input_planes % 2 == 0:
-            raise ValueError("input_planes must be a positive odd number")
+        history_length_from_input_planes(input_planes)
         if num_blocks < 1:
             raise ValueError("num_blocks must be at least 1")
 
@@ -2661,7 +2671,7 @@ class ConvNeXtPolicyValueEvaluator:
             return ()
 
         self.model.eval()
-        history_length = (self.model.input_planes - 1) // 2
+        history_length = history_length_from_input_planes(self.model.input_planes)
         board_planes = torch.tensor(
             [
                 encode_game_state(game_state, history_length=history_length)
@@ -3231,9 +3241,10 @@ def _evaluate_candidate(
 
 
 def _new_model(config: ConvNeXtTrainingConfig) -> ConvNeXtPolicyValueNet:
+    input_planes = 2 * config.history_length + 1
     return ConvNeXtPolicyValueNet(
         board_size=config.board_size,
-        input_planes=2 * config.history_length + 1,
+        input_planes=input_planes,
         channels=config.channels,
         num_blocks=config.num_blocks,
         kernel_size=config.kernel_size,
@@ -3451,6 +3462,7 @@ from policy_value_networks.convnext_policy_value.convnext_policy_value import (
     ConvNeXtPolicyValueEvaluator,
     ConvNeXtPolicyValueNet,
     LayerNorm2d,
+    StochasticDepth,
 )
 from policy_value_networks.convnext_policy_value.convnext_zero_loop import (
     ConvNeXtTrainingConfig,
@@ -3484,6 +3496,16 @@ def test_convnext_block_uses_depthwise_conv_and_layer_norm() -> None:
 
     assert block.depthwise_conv.groups == 8
     assert isinstance(block.norm, LayerNorm2d)
+
+
+def test_stochastic_depth_preserves_shape() -> None:
+    layer = StochasticDepth(drop_prob=0.5)
+    layer.train()
+    inputs = torch.ones((4, 3, 3, 3), dtype=torch.float32)
+
+    outputs = layer(inputs)
+
+    assert outputs.shape == inputs.shape
 
 
 def test_convnext_evaluator_returns_legal_priors() -> None:
@@ -4760,7 +4782,7 @@ def test_run_supervised_pretraining_updates_model() -> None:
         history_length=1,
     )
     model = PolicyValueNet(board_size=3, input_planes=3, channels=8, num_res_blocks=1)
-    optimizer = torch.optim.Adam(model.parameters(), lr=0.01)
+    optimizer = torch.optim.AdamW(model.parameters(), lr=0.01)
 
     losses = run_supervised_pretraining(
         model=model,

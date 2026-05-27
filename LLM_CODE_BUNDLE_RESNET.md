@@ -1727,6 +1727,12 @@ from go_engine.game import GameState
 from zero_training_pipeline.encoding import encode_game_state, move_to_index
 
 
+def history_length_from_input_planes(input_planes: int) -> int:
+    if input_planes < 1 or input_planes % 2 == 0:
+        raise ValueError("input_planes must be a positive odd number")
+    return (input_planes - 1) // 2
+
+
 class ResidualBlock(nn.Module):
     def __init__(self, channels: int) -> None:
         super().__init__()
@@ -1757,8 +1763,7 @@ class PolicyValueNet(nn.Module):
         super().__init__()
         if num_res_blocks < 1:
             raise ValueError("num_res_blocks must be at least 1")
-        if input_planes < 1 or input_planes % 2 == 0:
-            raise ValueError("input_planes must be a positive odd number")
+        history_length_from_input_planes(input_planes)
 
         self.board_size = board_size
         self.policy_size = board_size * board_size + 1
@@ -1813,7 +1818,7 @@ class TorchPolicyValueEvaluator:
             return ()
 
         self.model.eval()
-        history_length = (self.model.input_planes - 1) // 2
+        history_length = history_length_from_input_planes(self.model.input_planes)
         board_planes = torch.tensor(
             [
                 encode_game_state(game_state, history_length=history_length)
@@ -2042,7 +2047,7 @@ def run_zero_training(config: ZeroTrainingConfig) -> TrainingRunResult:
         replay_buffer.capacity = config.replay_buffer_size
     else:
         model = _new_model(config)
-        optimizer = torch.optim.Adam(model.parameters(), lr=config.learning_rate)
+        optimizer = torch.optim.AdamW(model.parameters(), lr=config.learning_rate)
         replay_buffer = ReplayBuffer(capacity=config.replay_buffer_size)
         if _maybe_run_supervised_pretraining(config, model, optimizer, rng):
             save_checkpoint(
@@ -2170,7 +2175,7 @@ def load_checkpoint(
     config = ZeroTrainingConfig.from_dict(checkpoint["config"])
     model = _new_model(config)
     model.load_state_dict(checkpoint["model_state"])
-    optimizer = torch.optim.Adam(model.parameters(), lr=config.learning_rate)
+    optimizer = torch.optim.AdamW(model.parameters(), lr=config.learning_rate)
     optimizer.load_state_dict(checkpoint["optimizer_state"])
     replay_buffer = ReplayBuffer(
         capacity=config.replay_buffer_size,
@@ -2408,9 +2413,10 @@ def _evaluate_candidate(
 
 
 def _new_model(config: ZeroTrainingConfig) -> PolicyValueNet:
+    input_planes = 2 * config.history_length + 1
     return PolicyValueNet(
         board_size=config.board_size,
-        input_planes=2 * config.history_length + 1,
+        input_planes=input_planes,
         channels=config.channels,
         num_res_blocks=config.num_res_blocks,
     ).to(config.device)
@@ -2622,7 +2628,7 @@ def main() -> None:
         channels=16,
         num_res_blocks=2,
     )
-    optimizer = torch.optim.Adam(model.parameters(), lr=0.01)
+    optimizer = torch.optim.AdamW(model.parameters(), lr=0.01)
 
     for step in range(1, 4):
         loss = train_step(
@@ -3269,6 +3275,7 @@ from policy_value_networks.resnet_policy_value.policy_value import (
     PolicyValueNet,
     ResidualBlock,
     TorchPolicyValueEvaluator,
+    history_length_from_input_planes,
 )
 from zero_training_pipeline.self_play import generate_self_play_game
 from zero_training_pipeline.torch_training import examples_to_tensors, train_step
@@ -3289,6 +3296,12 @@ def test_policy_value_network_uses_residual_tower() -> None:
 
     assert len(model.residual_tower) == 3
     assert all(isinstance(block, ResidualBlock) for block in model.residual_tower)
+
+
+def test_history_length_from_input_planes_validates_shape() -> None:
+    assert history_length_from_input_planes(17) == 8
+    with pytest.raises(ValueError):
+        history_length_from_input_planes(16)
 
 
 def test_examples_to_tensors_shapes() -> None:
@@ -3981,7 +3994,7 @@ def test_run_supervised_pretraining_updates_model() -> None:
         history_length=1,
     )
     model = PolicyValueNet(board_size=3, input_planes=3, channels=8, num_res_blocks=1)
-    optimizer = torch.optim.Adam(model.parameters(), lr=0.01)
+    optimizer = torch.optim.AdamW(model.parameters(), lr=0.01)
 
     losses = run_supervised_pretraining(
         model=model,
