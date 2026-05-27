@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import random
 import re
+import time
 from pathlib import Path
 
 import torch
@@ -72,7 +73,7 @@ def parse_sgf_training_examples(
 
         pending.append(
             (
-                game.board.zobrist_key(),
+                game.board.snapshot_key(),
                 game.next_player,
                 move,
                 _snapshot_history(game, history_length),
@@ -106,6 +107,7 @@ def run_supervised_pretraining(
     batch_size: int,
     device: torch.device | str,
     rng: random.Random,
+    max_seconds: float | None = None,
 ) -> list[float]:
     if steps < 1:
         return []
@@ -113,7 +115,10 @@ def run_supervised_pretraining(
         raise ValueError("supervised pretraining needs at least one example")
 
     losses = []
+    started_at = time.monotonic()
     for _ in range(steps):
+        if max_seconds is not None and time.monotonic() - started_at >= max_seconds:
+            break
         batch = _sample_examples(examples, batch_size, rng)
         losses.append(
             train_step(
@@ -123,6 +128,7 @@ def run_supervised_pretraining(
                 board_size=board_size,
                 history_length=history_length,
                 device=device,
+                rng=rng,
             )
         )
     return losses
@@ -193,6 +199,6 @@ def _snapshot_history(
     history = []
     state: GameState | None = game_state
     while state is not None and len(history) < history_length:
-        history.append(state.board.zobrist_key())
+        history.append(state.board.snapshot_key())
         state = state.previous_state
     return tuple(history)

@@ -101,7 +101,7 @@ def generate_self_play_game(
 
 
 def _snapshot_board(game_state: GameState) -> BoardSnapshot:
-    return game_state.board.zobrist_key()
+    return game_state.board.snapshot_key()
 
 
 def _snapshot_history(

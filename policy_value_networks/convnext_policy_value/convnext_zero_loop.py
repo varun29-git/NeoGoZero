@@ -3,6 +3,7 @@ from __future__ import annotations
 import copy
 import json
 import random
+import time
 from dataclasses import MISSING, asdict, dataclass, field, fields
 from pathlib import Path
 
@@ -57,8 +58,10 @@ class ConvNeXtTrainingConfig:
     resume_checkpoint: Path | None = None
     metrics_path: Path | None = None
     self_play_records_path: Path | None = None
+    max_training_seconds: float | None = None
     supervised_sgf_dir: Path | None = None
     supervised_steps: int = 0
+    supervised_max_seconds: float | None = None
     supervised_max_examples: int | None = None
     supervised_batch_size: int | None = None
     seed: int = 1
@@ -109,6 +112,10 @@ class ConvNeXtTrainingConfig:
             raise ValueError("dirichlet_epsilon must be in [0, 1]")
         if self.supervised_steps < 0:
             raise ValueError("supervised_steps cannot be negative")
+        if self.supervised_max_seconds is not None and self.supervised_max_seconds <= 0:
+            raise ValueError("supervised_max_seconds must be positive")
+        if self.max_training_seconds is not None and self.max_training_seconds <= 0:
+            raise ValueError("max_training_seconds must be positive")
         if self.supervised_max_examples is not None and self.supervised_max_examples < 1:
             raise ValueError("supervised_max_examples must be at least 1")
         if self.supervised_batch_size is not None and self.supervised_batch_size < 1:
@@ -153,6 +160,7 @@ class ConvNeXtTrainingConfig:
 def run_convnext_training(config: ConvNeXtTrainingConfig) -> TrainingRunResult:
     rng = random.Random(config.seed)
     torch.manual_seed(config.seed)
+    training_started_at = time.monotonic()
     checkpoint_dir = Path(config.checkpoint_dir)
     checkpoint_dir.mkdir(parents=True, exist_ok=True)
 
@@ -182,11 +190,32 @@ def run_convnext_training(config: ConvNeXtTrainingConfig) -> TrainingRunResult:
     iteration_results: list[TrainingIterationResult] = []
 
     for offset in range(1, config.iterations + 1):
+        if _time_budget_exhausted(config, training_started_at):
+            print("Time budget reached before starting next ConvNeXt iteration.", flush=True)
+            break
+
         iteration = start_iteration + offset
         champion_model = _clone_model(model, config)
-        generated_examples = _run_self_play(config, model, replay_buffer, rng, iteration)
-        losses = _train_from_replay(config, model, optimizer, replay_buffer, rng)
-        candidate_win_rate = _evaluate_candidate(config, model, champion_model, rng)
+        generated_examples = _run_self_play(
+            config,
+            model,
+            replay_buffer,
+            rng,
+            iteration,
+            training_started_at,
+        )
+        losses = _train_from_replay(
+            config,
+            model,
+            optimizer,
+            replay_buffer,
+            rng,
+            training_started_at,
+        )
+        if _time_budget_exhausted(config, training_started_at):
+            candidate_win_rate = 1.0
+        else:
+            candidate_win_rate = _evaluate_candidate(config, model, champion_model, rng)
         promoted = candidate_win_rate >= config.promotion_threshold
         if not promoted:
             model.load_state_dict(champion_model.state_dict())
@@ -204,13 +233,26 @@ def run_convnext_training(config: ConvNeXtTrainingConfig) -> TrainingRunResult:
         result = TrainingIterationResult(
             iteration=iteration,
             generated_examples=generated_examples,
-            mean_loss=sum(losses) / len(losses),
+            mean_loss=sum(losses) / len(losses) if losses else 0.0,
             candidate_win_rate=candidate_win_rate,
             promoted=promoted,
             checkpoint_path=checkpoint_path,
         )
         iteration_results.append(result)
         _write_metrics(config, result, len(replay_buffer))
+
+    if not iteration_results:
+        checkpoint_path = save_convnext_checkpoint(
+            checkpoint_dir=checkpoint_dir,
+            iteration=start_iteration,
+            model=model,
+            optimizer=optimizer,
+            config=config,
+            replay_buffer=replay_buffer,
+            promoted=True,
+            candidate_win_rate=1.0,
+        )
+        return TrainingRunResult(iterations=(), final_checkpoint_path=checkpoint_path)
 
     return TrainingRunResult(
         iterations=tuple(iteration_results),
@@ -274,11 +316,16 @@ def _run_self_play(
     replay_buffer: ReplayBuffer,
     rng: random.Random,
     iteration: int,
+    started_at: float,
 ) -> int:
     generated_examples = 0
     evaluator = ConvNeXtPolicyValueEvaluator(model, device=config.device)
 
     for game_index in range(1, config.self_play_games_per_iteration + 1):
+        if _time_budget_exhausted(config, started_at):
+            print("Time budget reached during ConvNeXt self-play.", flush=True)
+            break
+
         bot = MCTSBot(
             num_rounds=config.mcts_rounds,
             inference_batch_size=config.mcts_inference_batch_size,
@@ -355,6 +402,15 @@ def _move_to_data(move) -> dict[str, int | str]:
     }
 
 
+def _time_budget_exhausted(
+    config: ConvNeXtTrainingConfig,
+    started_at: float,
+) -> bool:
+    if config.max_training_seconds is None:
+        return False
+    return time.monotonic() - started_at >= config.max_training_seconds
+
+
 def _maybe_run_supervised_pretraining(
     config: ConvNeXtTrainingConfig,
     model: ConvNeXtPolicyValueNet,
@@ -381,12 +437,13 @@ def _maybe_run_supervised_pretraining(
         batch_size=batch_size,
         device=config.device,
         rng=rng,
+        max_seconds=config.supervised_max_seconds,
     )
-    mean_loss = sum(losses) / len(losses)
+    mean_loss = sum(losses) / len(losses) if losses else 0.0
     print(
         "Supervised pretraining complete: "
         f"examples={len(examples)}, "
-        f"steps={config.supervised_steps}, "
+        f"steps={len(losses)}/{config.supervised_steps}, "
         f"loss={mean_loss:.4f}",
         flush=True,
     )
@@ -399,9 +456,13 @@ def _train_from_replay(
     optimizer: torch.optim.Optimizer,
     replay_buffer: ReplayBuffer,
     rng: random.Random,
+    started_at: float,
 ) -> list[float]:
     losses = []
     for _ in range(config.training_steps_per_iteration):
+        if _time_budget_exhausted(config, started_at):
+            print("Time budget reached during ConvNeXt replay training.", flush=True)
+            break
         batch = replay_buffer.sample(config.batch_size, rng)
         losses.append(
             train_step(
@@ -411,6 +472,7 @@ def _train_from_replay(
                 board_size=config.board_size,
                 history_length=config.history_length,
                 device=config.device,
+                rng=rng,
             )
         )
     return losses

@@ -18,9 +18,9 @@ def main() -> None:
     )
     parser.add_argument("--output-dir", type=Path, default=Path("training_runs/t4_9x9"))
     parser.add_argument("--device", type=str, default="cuda")
-    parser.add_argument("--target-hours", type=float, default=24.0)
+    parser.add_argument("--target-hours-per-model", type=float, default=24.0)
     parser.add_argument("--supervised-budget-fraction", type=float, default=0.2)
-    parser.add_argument("--iterations", type=int, default=5)
+    parser.add_argument("--iterations", type=int, default=10)
     parser.add_argument("--self-play-games", type=int, default=100)
     parser.add_argument("--mcts-rounds", type=int, default=300)
     parser.add_argument("--mcts-inference-batch-size", type=int, default=64)
@@ -32,12 +32,19 @@ def main() -> None:
     parser.add_argument("--replay-buffer-size", type=int, default=250_000)
     parser.add_argument("--learning-rate", type=float, default=0.001)
     parser.add_argument("--supervised-sgf-dir", type=Path, default=Path("supervised_go_data/sgf_9x9"))
-    parser.add_argument("--supervised-steps", type=int, default=1_000)
+    parser.add_argument("--supervised-steps", type=int, default=None)
     parser.add_argument("--supervised-max-examples", type=int, default=None)
     parser.add_argument("--supervised-batch-size", type=int, default=128)
     parser.add_argument("--skip-supervised-pretraining", action="store_true")
     parser.add_argument("--dry-run", action="store_true")
     args = parser.parse_args()
+    if not 0 <= args.supervised_budget_fraction < 1:
+        raise SystemExit("--supervised-budget-fraction must be in [0, 1)")
+    supervised_steps = _supervised_steps(args)
+    per_model_budget_seconds = int(args.target_hours_per_model * 3600)
+    supervised_budget_seconds = int(
+        per_model_budget_seconds * args.supervised_budget_fraction
+    )
 
     if (
         not args.skip_supervised_pretraining
@@ -93,6 +100,8 @@ def main() -> None:
         str(run_dir / "metrics_resnet_policy_value.jsonl"),
         "--self-play-records-path",
         str(run_dir / "self_play_records_resnet_policy_value.jsonl"),
+        "--max-training-seconds",
+        str(per_model_budget_seconds),
         "--weights-export-dir",
         str(weights_dir),
         "--device",
@@ -106,7 +115,9 @@ def main() -> None:
                 "--supervised-sgf-dir",
                 str(args.supervised_sgf_dir),
                 "--supervised-steps",
-                str(args.supervised_steps),
+                str(supervised_steps),
+                "--supervised-max-seconds",
+                str(supervised_budget_seconds),
                 "--supervised-batch-size",
                 str(args.supervised_batch_size),
             ]
@@ -151,6 +162,8 @@ def main() -> None:
         str(run_dir / "metrics_convnext_policy_value.jsonl"),
         "--self-play-records-path",
         str(run_dir / "self_play_records_convnext_policy_value.jsonl"),
+        "--max-training-seconds",
+        str(per_model_budget_seconds),
         "--weights-export-dir",
         str(weights_dir),
         "--device",
@@ -164,7 +177,9 @@ def main() -> None:
                 "--supervised-sgf-dir",
                 str(args.supervised_sgf_dir),
                 "--supervised-steps",
-                str(args.supervised_steps),
+                str(supervised_steps),
+                "--supervised-max-seconds",
+                str(supervised_budget_seconds),
                 "--supervised-batch-size",
                 str(args.supervised_batch_size),
             ]
@@ -184,6 +199,8 @@ def main() -> None:
         args=args,
         commands=commands,
         weights_dir=weights_dir,
+        supervised_steps=supervised_steps,
+        supervised_budget_seconds=supervised_budget_seconds,
     )
 
     if args.dry_run:
@@ -212,25 +229,31 @@ def _write_run_manifest(
     args: argparse.Namespace,
     commands: list[tuple[str, list[str]]],
     weights_dir: Path,
+    supervised_steps: int,
+    supervised_budget_seconds: int,
 ) -> None:
     manifest_path = run_dir / "run_manifest.json"
     manifest_path.parent.mkdir(parents=True, exist_ok=True)
     total_self_play_games = args.iterations * args.self_play_games * len(commands)
     self_play_training_steps = args.iterations * args.training_steps
     supervised_fraction_of_gradient_steps = (
-        args.supervised_steps / (args.supervised_steps + self_play_training_steps)
+        supervised_steps / (supervised_steps + self_play_training_steps)
         if not args.skip_supervised_pretraining
         else 0.0
     )
+    target_hours_total = args.target_hours_per_model * len(commands)
     manifest = {
         "created_at": datetime.now().isoformat(timespec="seconds"),
-        "target_hours_total": args.target_hours,
-        "target_hours_per_model": args.target_hours / len(commands),
+        "target_hours_total": target_hours_total,
+        "target_hours_per_model": args.target_hours_per_model,
         "supervised_budget_fraction_target": args.supervised_budget_fraction,
+        "supervised_budget_seconds_per_model": supervised_budget_seconds,
+        "supervised_steps": supervised_steps if not args.skip_supervised_pretraining else 0,
         "supervised_fraction_of_gradient_steps": supervised_fraction_of_gradient_steps,
         "notes": (
-            "One GPU run: ResNet first, ConvNeXt second. Supervised SGF "
-            "pretraining is a short warm-up; most budget is self-play data generation."
+            "One GPU run: ResNet first, ConvNeXt second. Each model receives "
+            "its own wall-clock budget. Supervised SGF pretraining is a short "
+            "warm-up; most budget is self-play data generation."
         ),
         "default_data_targets": {
             "models": len(commands),
@@ -256,6 +279,24 @@ def _write_run_manifest(
         encoding="utf-8",
     )
     print(f"Run manifest: {manifest_path}")
+
+
+def _supervised_steps(args: argparse.Namespace) -> int:
+    if args.skip_supervised_pretraining:
+        return 0
+    if args.supervised_steps is not None:
+        return args.supervised_steps
+    self_play_training_steps = args.iterations * args.training_steps
+    if args.supervised_budget_fraction == 0:
+        return 0
+    return max(
+        1,
+        round(
+            args.supervised_budget_fraction
+            / (1 - args.supervised_budget_fraction)
+            * self_play_training_steps
+        ),
+    )
 
 
 def _run_and_log(

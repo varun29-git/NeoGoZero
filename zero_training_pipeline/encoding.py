@@ -14,7 +14,7 @@ def encode_game_state(game_state: GameState, history_length: int = 1) -> BoardPl
     history = []
     state: GameState | None = game_state
     while state is not None and len(history) < history_length:
-        history.append(state.board.zobrist_key())
+        history.append(state.board.snapshot_key())
         state = state.previous_state
 
     return encode_board_history(
@@ -91,17 +91,6 @@ def index_to_move(index: int, board_size: int) -> Move:
     row = index // board_size + 1
     col = index % board_size + 1
     return Move.play(Point(row, col))
-
-
-def _stone_plane(game_state: GameState, player: Player) -> tuple[tuple[int, ...], ...]:
-    size = game_state.board.size
-    return tuple(
-        tuple(
-            1 if game_state.board.get(Point(row, col)) is player else 0
-            for col in range(1, size + 1)
-        )
-        for row in range(1, size + 1)
-    )
 
 
 def _snapshot_plane(

@@ -12,6 +12,7 @@ from zero_training_pipeline.encoding import (
     index_to_move,
     move_to_index,
 )
+from zero_training_pipeline.torch_training import transform_board_planes, transform_policy
 
 
 def test_encode_game_state_uses_current_player_perspective() -> None:
@@ -94,3 +95,29 @@ def test_encode_board_history_pads_missing_positions() -> None:
         (0, 0, 0),
         (0, 0, 0),
     )
+
+
+def test_dihedral_augmentation_rotates_board_planes_and_policy() -> None:
+    planes = (
+        (
+            (1, 0, 0),
+            (0, 0, 0),
+            (0, 0, 0),
+        ),
+    )
+    policy = encode_policy({Move.play(Point(1, 1)): 1.0}, board_size=3)
+
+    rotated_planes = transform_board_planes(planes, symmetry=1)
+    rotated_policy = transform_policy(policy, board_size=3, symmetry=1)
+
+    assert rotated_planes[0][0][2] == 1
+    assert rotated_policy[2] == 1.0
+    assert rotated_policy[-1] == 0.0
+
+
+def test_dihedral_augmentation_preserves_pass_policy() -> None:
+    policy = encode_policy({Move.pass_turn(): 1.0}, board_size=3)
+
+    transformed = transform_policy(policy, board_size=3, symmetry=4)
+
+    assert transformed[-1] == 1.0

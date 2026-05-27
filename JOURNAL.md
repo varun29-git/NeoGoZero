@@ -151,9 +151,12 @@
 - Added `--device` to ResNet and ConvNeXt training commands so 9x9 runs can target CUDA/MPS-capable accelerators.
 - Added optional supervised SGF pretraining before self-play fine-tuning for both ResNet and ConvNeXt.
 - Added batched neural leaf evaluation in PUCT through `--mcts-inference-batch-size`.
+- Added random dihedral symmetry augmentation during training batches.
+- Added cached board point lookup and cached board position hashes for faster rules and ko checks while keeping the public board API stable.
+- Renamed active board snapshot calls away from the misleading `zobrist_key` name, removed dead encoder code, generalized `train_step` typing for both model families, and made tied scores explicit errors instead of silent White wins.
 - Added automatic final weight exports and zipped download bundles for both ResNet and ConvNeXt training commands.
 - Added `play_and_train_commands/train_both_models_9x9_t4.py` so a single T4 VM can train ResNet and ConvNeXt sequentially without supervision.
-- Tuned the unattended T4 launcher for a 24-hour two-model run with ResNet first, ConvNeXt second, supervised pretraining at about 20% of gradient steps, and larger self-play data collection.
+- Tuned the unattended T4 launcher for a 24-hour-per-model run with ResNet first, ConvNeXt second, supervised pretraining capped at 20% of each model's wall-clock budget, and larger self-play data collection.
 - Added self-play JSONL records and a run manifest so later analysis can inspect games, scores, move counts, metrics, logs, checkpoints, and exported weights.
 - Added ETA reporting to the unattended T4 launcher.
 - Added tests for temperature selection, Dirichlet noise, history planes, self-play history capture, metrics writing, and checkpoint resume.

@@ -94,6 +94,8 @@ class GameState:
 
     def winner(self, komi: float = 7.5) -> Player:
         result = self.score(komi=komi)
+        if result.black == result.white:
+            raise ValueError("game is tied")
         return Player.BLACK if result.black > result.white else Player.WHITE
 
     def score(self, komi: float = 7.5) -> Score:
@@ -146,10 +148,10 @@ class GameState:
         return frozenset(region), frozenset(bordering_players)
 
     def _violates_ko(self, next_board: Board) -> bool:
-        next_situation = (self.next_player.other, next_board.zobrist_key())
+        next_situation = (self.next_player.other, next_board.position_hash())
         state = self.previous_state
         while state is not None:
-            if (state.next_player, state.board.zobrist_key()) == next_situation:
+            if (state.next_player, state.board.position_hash()) == next_situation:
                 return True
             state = state.previous_state
         return False

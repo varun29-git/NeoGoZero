@@ -47,8 +47,10 @@ def main() -> None:
     parser.add_argument("--resume-checkpoint", type=Path, default=None)
     parser.add_argument("--metrics-path", type=Path, default=None)
     parser.add_argument("--self-play-records-path", type=Path, default=None)
+    parser.add_argument("--max-training-seconds", type=float, default=None)
     parser.add_argument("--supervised-sgf-dir", type=Path, default=None)
     parser.add_argument("--supervised-steps", type=int, default=0)
+    parser.add_argument("--supervised-max-seconds", type=float, default=None)
     parser.add_argument("--supervised-max-examples", type=int, default=None)
     parser.add_argument("--supervised-batch-size", type=int, default=None)
     parser.add_argument("--seed", type=int, default=1)
@@ -86,8 +88,10 @@ def main() -> None:
         resume_checkpoint=args.resume_checkpoint,
         metrics_path=args.metrics_path,
         self_play_records_path=args.self_play_records_path,
+        max_training_seconds=args.max_training_seconds,
         supervised_sgf_dir=args.supervised_sgf_dir,
         supervised_steps=args.supervised_steps,
+        supervised_max_seconds=args.supervised_max_seconds,
         supervised_max_examples=args.supervised_max_examples,
         supervised_batch_size=args.supervised_batch_size,
         seed=args.seed,
@@ -104,6 +108,8 @@ def main() -> None:
             f"candidate_win_rate={iteration.candidate_win_rate:.1%}, "
             f"promoted={iteration.promoted}"
         )
+    if not result.iterations:
+        print("No self-play iterations completed; exporting the latest checkpoint.")
     print(f"Final checkpoint: {result.final_checkpoint_path}")
     if not args.skip_weights_export:
         export = export_checkpoint_weights(

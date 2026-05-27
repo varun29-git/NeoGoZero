@@ -104,6 +104,25 @@ def test_ko_prevents_immediate_recapture() -> None:
     assert not after_capture.is_valid_move(Move.play(Point(2, 3)))
 
 
+def test_board_position_hash_is_stable_and_order_independent() -> None:
+    stones = [
+        (Point(1, 1), Player.BLACK),
+        (Point(2, 2), Player.WHITE),
+    ]
+    board_a = Board.from_grid(3, stones)
+    board_b = Board.from_grid(3, reversed(stones))
+
+    assert board_a.position_hash() == board_b.position_hash()
+    assert board_a.snapshot_key() == board_b.snapshot_key()
+
+
+def test_board_position_hash_changes_after_move() -> None:
+    board = Board(size=3)
+    next_board = board.place_stone(Player.BLACK, Point(1, 1))
+
+    assert board.position_hash() != next_board.position_hash()
+
+
 def test_two_passes_end_the_game() -> None:
     game = GameState.new_game(board_size=5)
 
@@ -132,6 +151,13 @@ def test_area_scoring_counts_stones_and_owned_empty_regions() -> None:
 
     assert score.black == 5
     assert score.white == 1
+
+
+def test_winner_rejects_tied_score() -> None:
+    game = GameState.new_game(board_size=3)
+
+    with pytest.raises(ValueError, match="tied"):
+        game.winner(komi=0)
 
 
 def test_random_bots_can_finish_a_small_game() -> None:

@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from collections.abc import Iterable
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 from go_engine.types import Player, Point
 
@@ -10,16 +10,24 @@ from go_engine.types import Player, Point
 class Board:
     size: int = 9
     grid: frozenset[tuple[Point, Player]] = frozenset()
+    _stones_by_point: dict[Point, Player] = field(init=False, repr=False, compare=False)
+    _position_hash: int = field(init=False, repr=False, compare=False)
 
     def __post_init__(self) -> None:
         if self.size < 2:
             raise ValueError("board size must be at least 2")
-        points = [point for point, _ in self.grid]
-        if len(points) != len(set(points)):
+        stones_by_point = dict(self.grid)
+        if len(stones_by_point) != len(self.grid):
             raise ValueError("a point cannot contain more than one stone")
         for point, _ in self.grid:
             if not self.is_on_grid(point):
                 raise ValueError(f"point is outside the board: {point}")
+        object.__setattr__(self, "_stones_by_point", stones_by_point)
+        object.__setattr__(
+            self,
+            "_position_hash",
+            _position_hash(self.size, self.grid),
+        )
 
     @classmethod
     def from_grid(
@@ -31,10 +39,7 @@ class Board:
         return 1 <= point.row <= self.size and 1 <= point.col <= self.size
 
     def get(self, point: Point) -> Player | None:
-        for stone_point, player in self.grid:
-            if stone_point == point:
-                return player
-        return None
+        return self._stones_by_point.get(point)
 
     def is_empty(self, point: Point) -> bool:
         return self.get(point) is None
@@ -45,7 +50,7 @@ class Board:
         if not self.is_empty(point):
             raise ValueError(f"point is already occupied: {point}")
 
-        stones = dict(self.grid)
+        stones = dict(self._stones_by_point)
         stones[point] = player
 
         board_after_placement = Board.from_grid(self.size, stones.items())
@@ -103,10 +108,16 @@ class Board:
             if self.is_empty(Point(row, col))
         )
 
-    def zobrist_key(self) -> tuple[tuple[int, int, str], ...]:
+    def snapshot_key(self) -> tuple[tuple[int, int, str], ...]:
         return tuple(
             sorted((point.row, point.col, player.value) for point, player in self.grid)
         )
+
+    def zobrist_key(self) -> tuple[tuple[int, int, str], ...]:
+        return self.snapshot_key()
+
+    def position_hash(self) -> int:
+        return self._position_hash
 
     def __str__(self) -> str:
         rows = []
@@ -117,3 +128,29 @@ class Board:
                 cells.append(player.marker if player else ".")
             rows.append(" ".join(cells))
         return "\n".join(rows)
+
+
+def _position_hash(
+    size: int,
+    grid: frozenset[tuple[Point, Player]],
+) -> int:
+    value = 0
+    for point, player in grid:
+        value ^= _stone_hash(size, point, player)
+    return value
+
+
+def _stone_hash(size: int, point: Point, player: Player) -> int:
+    color_id = 1 if player is Player.BLACK else 2
+    key = (
+        size * 0x9E3779B185EBCA87
+        ^ point.row * 0xC2B2AE3D27D4EB4F
+        ^ point.col * 0x165667B19E3779F9
+        ^ color_id * 0x85EBCA77C2B2AE63
+    ) & ((1 << 64) - 1)
+    key ^= key >> 30
+    key = (key * 0xBF58476D1CE4E5B9) & ((1 << 64) - 1)
+    key ^= key >> 27
+    key = (key * 0x94D049BB133111EB) & ((1 << 64) - 1)
+    key ^= key >> 31
+    return key
