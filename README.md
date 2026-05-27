@@ -1,6 +1,6 @@
 # NeoGoZero
 
-NeoGoZero is a research-oriented AlphaGo Zero / AlphaZero-style Go engine built
+NeoGoZero is a research-oriented AlphaGo Zero engine built
 from first principles for controlled 9x9 experiments. The project contains a
 complete rules engine, PUCT search, neural policy-value evaluators, self-play
 data generation, replay training, supervised warm-start support, checkpointing,
