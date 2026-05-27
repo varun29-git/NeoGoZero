@@ -56,6 +56,7 @@ class ConvNeXtTrainingConfig:
     checkpoint_dir: Path = Path("checkpoints_convnext_policy_value")
     resume_checkpoint: Path | None = None
     metrics_path: Path | None = None
+    self_play_records_path: Path | None = None
     supervised_sgf_dir: Path | None = None
     supervised_steps: int = 0
     supervised_max_examples: int | None = None
@@ -120,6 +121,9 @@ class ConvNeXtTrainingConfig:
             str(self.resume_checkpoint) if self.resume_checkpoint is not None else None
         )
         data["metrics_path"] = str(self.metrics_path) if self.metrics_path is not None else None
+        data["self_play_records_path"] = (
+            str(self.self_play_records_path) if self.self_play_records_path is not None else None
+        )
         data["supervised_sgf_dir"] = (
             str(self.supervised_sgf_dir) if self.supervised_sgf_dir is not None else None
         )
@@ -139,6 +143,8 @@ class ConvNeXtTrainingConfig:
             converted["resume_checkpoint"] = Path(str(converted["resume_checkpoint"]))
         if converted.get("metrics_path") is not None:
             converted["metrics_path"] = Path(str(converted["metrics_path"]))
+        if converted.get("self_play_records_path") is not None:
+            converted["self_play_records_path"] = Path(str(converted["self_play_records_path"]))
         if converted.get("supervised_sgf_dir") is not None:
             converted["supervised_sgf_dir"] = Path(str(converted["supervised_sgf_dir"]))
         return cls(**converted)
@@ -178,7 +184,7 @@ def run_convnext_training(config: ConvNeXtTrainingConfig) -> TrainingRunResult:
     for offset in range(1, config.iterations + 1):
         iteration = start_iteration + offset
         champion_model = _clone_model(model, config)
-        generated_examples = _run_self_play(config, model, replay_buffer, rng)
+        generated_examples = _run_self_play(config, model, replay_buffer, rng, iteration)
         losses = _train_from_replay(config, model, optimizer, replay_buffer, rng)
         candidate_win_rate = _evaluate_candidate(config, model, champion_model, rng)
         promoted = candidate_win_rate >= config.promotion_threshold
@@ -267,11 +273,12 @@ def _run_self_play(
     model: ConvNeXtPolicyValueNet,
     replay_buffer: ReplayBuffer,
     rng: random.Random,
+    iteration: int,
 ) -> int:
     generated_examples = 0
     evaluator = ConvNeXtPolicyValueEvaluator(model, device=config.device)
 
-    for _ in range(config.self_play_games_per_iteration):
+    for game_index in range(1, config.self_play_games_per_iteration + 1):
         bot = MCTSBot(
             num_rounds=config.mcts_rounds,
             inference_batch_size=config.mcts_inference_batch_size,
@@ -292,8 +299,60 @@ def _run_self_play(
         )
         replay_buffer.add_examples(game.examples)
         generated_examples += len(game.examples)
+        _write_self_play_record(config, iteration, game_index, game)
 
     return generated_examples
+
+
+def _write_self_play_record(
+    config: ConvNeXtTrainingConfig,
+    iteration: int,
+    game_index: int,
+    game,
+) -> None:
+    if config.self_play_records_path is None:
+        return
+
+    records_path = Path(config.self_play_records_path)
+    records_path.parent.mkdir(parents=True, exist_ok=True)
+    score = game.final_state.score()
+    with records_path.open("a", encoding="utf-8") as file:
+        file.write(
+            json.dumps(
+                {
+                    "architecture": "convnext_policy_value",
+                    "iteration": iteration,
+                    "game_index": game_index,
+                    "board_size": config.board_size,
+                    "history_length": config.history_length,
+                    "mcts_rounds": config.mcts_rounds,
+                    "mcts_inference_batch_size": config.mcts_inference_batch_size,
+                    "temperature": config.self_play_temperature,
+                    "temperature_drop_move": config.temperature_drop_move,
+                    "dirichlet_alpha": config.dirichlet_alpha,
+                    "dirichlet_epsilon": config.dirichlet_epsilon,
+                    "winner": game.winner.value,
+                    "num_moves": len(game.moves),
+                    "num_examples": len(game.examples),
+                    "black_score": score.black,
+                    "white_score": score.white,
+                    "score_margin": score.margin,
+                    "moves": [_move_to_data(move) for move in game.moves],
+                }
+            )
+            + "\n"
+        )
+
+
+def _move_to_data(move) -> dict[str, int | str]:
+    if move.is_pass:
+        return {"type": "pass"}
+    assert move.point is not None
+    return {
+        "type": "play",
+        "row": move.point.row,
+        "col": move.point.col,
+    }
 
 
 def _maybe_run_supervised_pretraining(
