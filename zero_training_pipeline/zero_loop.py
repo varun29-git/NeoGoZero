@@ -194,7 +194,7 @@ def run_zero_training(config: ZeroTrainingConfig) -> TrainingRunResult:
         replay_buffer.capacity = config.replay_buffer_size
     else:
         model = _new_model(config)
-        optimizer = torch.optim.Adam(model.parameters(), lr=config.learning_rate)
+        optimizer = torch.optim.AdamW(model.parameters(), lr=config.learning_rate)
         replay_buffer = ReplayBuffer(capacity=config.replay_buffer_size)
         if _maybe_run_supervised_pretraining(config, model, optimizer, rng):
             save_checkpoint(
@@ -322,7 +322,7 @@ def load_checkpoint(
     config = ZeroTrainingConfig.from_dict(checkpoint["config"])
     model = _new_model(config)
     model.load_state_dict(checkpoint["model_state"])
-    optimizer = torch.optim.Adam(model.parameters(), lr=config.learning_rate)
+    optimizer = torch.optim.AdamW(model.parameters(), lr=config.learning_rate)
     optimizer.load_state_dict(checkpoint["optimizer_state"])
     replay_buffer = ReplayBuffer(
         capacity=config.replay_buffer_size,
@@ -560,9 +560,10 @@ def _evaluate_candidate(
 
 
 def _new_model(config: ZeroTrainingConfig) -> PolicyValueNet:
+    input_planes = 2 * config.history_length + 1
     return PolicyValueNet(
         board_size=config.board_size,
-        input_planes=2 * config.history_length + 1,
+        input_planes=input_planes,
         channels=config.channels,
         num_res_blocks=config.num_res_blocks,
     ).to(config.device)

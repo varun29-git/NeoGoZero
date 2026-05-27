@@ -12,6 +12,7 @@ from policy_value_networks.resnet_policy_value.policy_value import (
     PolicyValueNet,
     ResidualBlock,
     TorchPolicyValueEvaluator,
+    history_length_from_input_planes,
 )
 from zero_training_pipeline.self_play import generate_self_play_game
 from zero_training_pipeline.torch_training import examples_to_tensors, train_step
@@ -32,6 +33,12 @@ def test_policy_value_network_uses_residual_tower() -> None:
 
     assert len(model.residual_tower) == 3
     assert all(isinstance(block, ResidualBlock) for block in model.residual_tower)
+
+
+def test_history_length_from_input_planes_validates_shape() -> None:
+    assert history_length_from_input_planes(17) == 8
+    with pytest.raises(ValueError):
+        history_length_from_input_planes(16)
 
 
 def test_examples_to_tensors_shapes() -> None:

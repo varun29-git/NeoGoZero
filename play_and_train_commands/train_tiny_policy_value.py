@@ -33,7 +33,7 @@ def main() -> None:
         channels=16,
         num_res_blocks=2,
     )
-    optimizer = torch.optim.Adam(model.parameters(), lr=0.01)
+    optimizer = torch.optim.AdamW(model.parameters(), lr=0.01)
 
     for step in range(1, 4):
         loss = train_step(

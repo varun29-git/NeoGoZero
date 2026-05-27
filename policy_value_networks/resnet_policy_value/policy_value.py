@@ -11,6 +11,12 @@ from go_engine.game import GameState
 from zero_training_pipeline.encoding import encode_game_state, move_to_index
 
 
+def history_length_from_input_planes(input_planes: int) -> int:
+    if input_planes < 1 or input_planes % 2 == 0:
+        raise ValueError("input_planes must be a positive odd number")
+    return (input_planes - 1) // 2
+
+
 class ResidualBlock(nn.Module):
     def __init__(self, channels: int) -> None:
         super().__init__()
@@ -41,8 +47,7 @@ class PolicyValueNet(nn.Module):
         super().__init__()
         if num_res_blocks < 1:
             raise ValueError("num_res_blocks must be at least 1")
-        if input_planes < 1 or input_planes % 2 == 0:
-            raise ValueError("input_planes must be a positive odd number")
+        history_length_from_input_planes(input_planes)
 
         self.board_size = board_size
         self.policy_size = board_size * board_size + 1
@@ -97,7 +102,7 @@ class TorchPolicyValueEvaluator:
             return ()
 
         self.model.eval()
-        history_length = (self.model.input_planes - 1) // 2
+        history_length = history_length_from_input_planes(self.model.input_planes)
         board_planes = torch.tensor(
             [
                 encode_game_state(game_state, history_length=history_length)

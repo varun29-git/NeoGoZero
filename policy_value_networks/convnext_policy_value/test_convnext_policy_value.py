@@ -13,6 +13,7 @@ from policy_value_networks.convnext_policy_value.convnext_policy_value import (
     ConvNeXtPolicyValueEvaluator,
     ConvNeXtPolicyValueNet,
     LayerNorm2d,
+    StochasticDepth,
 )
 from policy_value_networks.convnext_policy_value.convnext_zero_loop import (
     ConvNeXtTrainingConfig,
@@ -46,6 +47,16 @@ def test_convnext_block_uses_depthwise_conv_and_layer_norm() -> None:
 
     assert block.depthwise_conv.groups == 8
     assert isinstance(block.norm, LayerNorm2d)
+
+
+def test_stochastic_depth_preserves_shape() -> None:
+    layer = StochasticDepth(drop_prob=0.5)
+    layer.train()
+    inputs = torch.ones((4, 3, 3, 3), dtype=torch.float32)
+
+    outputs = layer(inputs)
+
+    assert outputs.shape == inputs.shape
 
 
 def test_convnext_evaluator_returns_legal_priors() -> None:

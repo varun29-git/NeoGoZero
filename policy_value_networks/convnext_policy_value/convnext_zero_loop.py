@@ -535,9 +535,10 @@ def _evaluate_candidate(
 
 
 def _new_model(config: ConvNeXtTrainingConfig) -> ConvNeXtPolicyValueNet:
+    input_planes = 2 * config.history_length + 1
     return ConvNeXtPolicyValueNet(
         board_size=config.board_size,
-        input_planes=2 * config.history_length + 1,
+        input_planes=input_planes,
         channels=config.channels,
         num_blocks=config.num_blocks,
         kernel_size=config.kernel_size,
